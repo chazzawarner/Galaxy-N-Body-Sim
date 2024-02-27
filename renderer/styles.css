@@ -1,0 +1,23 @@
+#canvas-and-controls {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+#canvas-container {
+    display: block;
+}
+
+#controls {
+    display: block;
+    margin: 0 auto;
+    margin-top: 20px;
+}
+
+#slider-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
