@@ -1,0 +1,68 @@
+{
+    "name": "Jason the Galaxy",
+    "components": [
+        {
+            "name": "Stellar Disk",
+            "dark matter": false,
+            "potentials": [
+                {
+                    "type": "Miyamoto-Nagai",
+                    "parameters": {
+                        "mass": 6.6e10,
+                        "a": 5.81,
+                        "b": 0.3
+                    }
+                },
+                {
+                    "type": "Miyamoto-Nagai",
+                    "parameters": {
+                        "mass": 2.9e10,
+                        "a": 17.43,
+                        "b": 0.3
+                    }
+                },
+                {
+                    "type": "Miyamoto-Nagai",
+                    "parameters": {
+                        "mass": 3.3e9,
+                        "a": 34.86,
+                        "b": 0.3
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Central Bulge",
+            "dark matter": false,
+            "potentials": [
+                {
+                    "type": "Hernquist",
+                    "parameters": {
+                        "mass": 3e9,
+                        "a": 2.7
+                    }
+                },
+                {
+                    "type": "Hernquist",
+                    "parameters": {
+                        "mass": 1.6e10,
+                        "a": 0.42
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Dark Matter Halo",
+            "dark matter": true,
+            "potentials": [
+                {
+                    "type": "NFW",
+                    "parameters": {
+                        "mass": 1e11,
+                        "a": 8.5
+                    }
+                }
+            ]
+        }
+    ]
+}

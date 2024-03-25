@@ -97,10 +97,10 @@ class Galaxy:
                 #samples = metropolis_hastings(density, 1, num_bodies)
                 samples = elliptical_galaxy_gen(pot_bodies, a=potential['parameters']['a'])
                 
-                # Scale samples to the radius of "a"
+                """# Scale samples to the radius of "a" - a precautionary measure
                 scale = potential['parameters']['a'] / np.percentile(samples, 99)
                 print(f"Scale: {scale}")
-                samples = samples * scale
+                samples = samples * scale"""
                 
                 # Reject samples outside the maximum radius of the galaxy
                 samples = samples[samples < self.get_galaxy_max_radius()]
@@ -186,9 +186,9 @@ class Galaxy:
     
 
 def main():
-    with open('backend/galaxies/generic.json', 'r') as f:
+    with open('backend/galaxies/paper_galaxy.json', 'r') as f:
         galaxy_json = json.load(f)
-    galaxy = Galaxy(galaxy_json['name'], galaxy_json['components'], num_bodies=10000)
+    galaxy = Galaxy(galaxy_json['name'], galaxy_json['components'], num_bodies=100000)
     print(galaxy.total_mass)
     galaxy.plot_scatter_density()
     galaxy.plot_component_scatter()
