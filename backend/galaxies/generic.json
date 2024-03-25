@@ -1,0 +1,45 @@
+{
+    "name": "Gary the Galaxy",
+    "components": [
+        {
+            "name": "Stellar Disk",
+            "dark matter": false,
+            "potentials": [
+                {
+                    "type": "Miyamoto-Nagai",
+                    "parameters": {
+                        "mass": 1.0,
+                        "a": 10,
+                        "b": 0.1
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Central Bulge",
+            "dark matter": false,
+            "potentials": [
+                {
+                    "type": "Hernquist",
+                    "parameters": {
+                        "mass": 0.5,
+                        "a": 0.2
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Dark Matter Halo",
+            "dark matter": true,
+            "potentials": [
+                {
+                    "type": "NFW",
+                    "parameters": {
+                        "mass": 1.0,
+                        "a": 1.0
+                    }
+                }
+            ]
+        }
+    ]
+}
