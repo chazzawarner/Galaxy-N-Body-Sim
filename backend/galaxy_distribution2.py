@@ -4,6 +4,7 @@ import json
 import astropy.units as u
 from mcmc import metropolis_hastings
 from galpy.potential import MiyamotoNagaiPotential, HernquistPotential, NFWPotential
+from galaxy_intitialisation import elliptical_galaxy_gen
 
 # Galaxy generation function
 class Galaxy:
@@ -27,6 +28,7 @@ class Galaxy:
                     potential['parameters'].update({'normalise': 1})
                     potential['galpy_potential'] = NFWPotential(a=parameters['a']*pos_units)
         
+        # Calculate total potential of galaxy to use for rotational velocity
         self.total_potential = self.get_total_potential()
         
         # Generate bodies from components
@@ -36,6 +38,7 @@ class Galaxy:
                 positions = self.generate_positions(component, num_bodies_comp)
                 velocities = self.generate_velocities(positions, self.total_potential)
                 component.update({'bodies': {'positions': positions, 'velocities': velocities}})
+                  
                     
     # Get total mass of galaxy from all components    
     def get_total_mass(self):
@@ -87,18 +90,50 @@ class Galaxy:
                 y = R * np.sin(theta)
                 
                 positions = np.vstack((positions, np.column_stack((x, y, z))))
+                print(f"Num. bodies in {potential['type']}: {pot_bodies}")
                 
-            else: # Hernquist or NFW (Spherical potentials) 
-                density = lambda r: potential['galpy_potential'].dens(r + 1e-10, 0)
-                samples = metropolis_hastings(density, 1, num_bodies)
+            else: # Hernquist
+                #density = lambda r: potential['galpy_potential'].dens(r + 1e-10, 0)
+                #samples = metropolis_hastings(density, 1, num_bodies)
+                samples = elliptical_galaxy_gen(pot_bodies, a=potential['parameters']['a'])
+                
+                # Scale samples to the radius of "a"
+                scale = potential['parameters']['a'] / np.percentile(samples, 99)
+                print(f"Scale: {scale}")
+                samples = samples * scale
+                
+                # Reject samples outside the maximum radius of the galaxy
+                samples = samples[samples < self.get_galaxy_max_radius()]
+                
+                samples = samples.reshape(-1, 1)
                 print(samples)
-                direction = np.random.normal(size=(num_bodies, 3))
+                print(f"Num. bodies in {potential['type']}: {pot_bodies}")
+                
+                # Generate random directions for bodies
+                direction = np.random.normal(size=(np.size(samples), 3))
                 direction /= np.linalg.norm(direction, axis=1).reshape(-1, 1)
-                print(direction)
+                #print(direction)
                 
                 positions = np.vstack((positions, samples * direction))
+                #print(f"Positions: {positions}")
         
         return positions
+    
+    def get_galaxy_max_radius(self):
+        max_radius = 0
+        for component in self.components:
+            for potential in component['potentials']:
+                if potential['type'] == 'Miyamoto-Nagai':
+                    a = potential['parameters']['a']
+                    b = potential['parameters']['b']
+                    if a > max_radius:
+                        max_radius = a
+                    if b > max_radius:
+                        max_radius = b
+                else:
+                    if potential['parameters']['a'] > max_radius:
+                        max_radius = potential['parameters']['a']
+        return max_radius
     
     def generate_velocities(self, bodies, total_potential):
         pass
@@ -123,6 +158,7 @@ class Galaxy:
         plt.ylabel('z (kpc)')
 
         plt.savefig(f'backend/galaxy_plots/{self.name}_density_hexbin.png')
+        plt.show()
         
     def plot_component_scatter(self):
         plt.figure()
@@ -138,7 +174,8 @@ class Galaxy:
         plt.xlabel('R (kpc)')
         plt.ylabel('z (kpc)')
         #plt.xscale('log')
-        plt.savefig(f'backend/galaxy_plots/{self.name}_component_scatter.png')
+        #plt.savefig(f'backend/galaxy_plots/{self.name}_component_scatter.png')
+        plt.show()
         
         
         
@@ -151,7 +188,7 @@ class Galaxy:
 def main():
     with open('backend/galaxies/generic.json', 'r') as f:
         galaxy_json = json.load(f)
-    galaxy = Galaxy(galaxy_json['name'], galaxy_json['components'], num_bodies=1000000)
+    galaxy = Galaxy(galaxy_json['name'], galaxy_json['components'], num_bodies=10000)
     print(galaxy.total_mass)
     galaxy.plot_scatter_density()
     galaxy.plot_component_scatter()

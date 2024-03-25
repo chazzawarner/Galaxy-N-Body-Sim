@@ -33,7 +33,7 @@ def main():
     # Plot density for Miyamoto-Nagai potential
     R = np.linspace(0.1, 10, 1000)
     z = np.linspace(-10, 10, 1000)
-    a = 1.2
+    a = 10
     b = 0.1
     R, z = np.meshgrid(R, z)
     potential = MiyamotoNagaiPotential(a=a, b=b, normalize=1)
@@ -46,10 +46,11 @@ def main():
     plt.xlim(0, 5)
     plt.ylim(-1, 1)
     plt.savefig('backend/mcmc_plots/miyamoto_nagai_density.png')
+    #plt.show()
     print('MCMC plots saved to backend/mcmc_plots')
 
     # Sample from Miyamoto-Nagai potential density using MCMC
-    n_samples = 1000000
+    n_samples = 100000
     density = lambda R, z: potential.dens(R, z, 0)
     samples = metropolis_hastings(density, 2, n_samples)
 
@@ -65,6 +66,7 @@ def main():
     plt.xlim(0, 5)
     plt.ylim(-1, 1)
     plt.savefig('backend/mcmc_plots/miyamoto_nagai_samples_hexbin.png')
+    plt.show()
 
 
 if __name__ == "__main__":

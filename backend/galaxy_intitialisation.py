@@ -4,6 +4,7 @@ import sympy as sp
 from latex2sympy2 import latex2sympy as l2s
 from star_types import get_random_star
 from astropy import units as u
+from galpy.potential import HernquistPotential
 
 # Method taken from https://bjerkeli.se/onewebmedia/thesis.pdf
 
@@ -25,7 +26,8 @@ hernquist = {
 }
 
 # Define elliptical galaxy generation function using the Hernquist distribution
-def elliptical_galaxy_gen(num_bodies, max_radius, total_mass, a=1, G=G.value):
+#def elliptical_galaxy_gen(num_bodies, max_radius, total_mass, a=1, G=G.value):
+def elliptical_galaxy_gen(num_bodies, a=1):
     # Generate positions
     ## Draw random mass fractions and solve for radius
     mass_fractions = np.random.rand(num_bodies)
@@ -37,7 +39,13 @@ def elliptical_galaxy_gen(num_bodies, max_radius, total_mass, a=1, G=G.value):
     #print(radius_solutions)
     
     radius = radius_solutions_func(mass_fractions, a)
-    #print(radius)
+    #print(f"Radius: {radius}")
+    
+    return radius
+    
+    """plt.hist(radius, bins=100, density=True)
+    plt.xscale("log")
+    plt.show()
     
     ## Randomly distribute on a sphere of corresponding radius
     ### Generate random positions
@@ -70,12 +78,12 @@ def elliptical_galaxy_gen(num_bodies, max_radius, total_mass, a=1, G=G.value):
     
     # V^2_circ = GMr(r+a)^-2
     
-    return positions, radius
+    return positions, radius"""
 
 def main():
     # Test the elliptical galaxy generation function
     radius = 40e3 # parsecs
-    num_bodies = 5
+    num_bodies = 1000
     total_mass = 1e9 # solar masses
     G_const = G.to_value(u.pc**3 / (u.M_sun * u.s**2))
     print(f"G: {G_const}")
@@ -143,4 +151,5 @@ def main():
 
     plt.show()
     
-main()
+if __name__ == '__main__':
+    main()
