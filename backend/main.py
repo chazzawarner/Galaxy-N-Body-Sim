@@ -40,7 +40,7 @@ def main():
     #bodies[0].position = np.array([bounding_box/2, bounding_box/2])  # Set the position of the first body to the origin
     #bodies[0].velocity = np.array([0.0, 0.0])  # Set the velocity of the first body to zero"""
     #bodies = galaxy_generation(num_bodies, bounding_box)
-    galaxy = Galaxy('backend/galaxies/basic_galaxy.json', num_bodies=1000)
+    galaxy = Galaxy('backend/galaxies/basic_galaxy.json', num_bodies=10000)
     bodies = galaxy.get_galaxy()
     
     # Only consider the x and y coordinates

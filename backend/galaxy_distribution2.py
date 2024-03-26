@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import json
 import astropy.units as u
 from mcmc import metropolis_hastings
-from galpy.potential import MiyamotoNagaiPotential, HernquistPotential, NFWPotential, vcirc, tdyn, mass
+from galpy.potential import MiyamotoNagaiPotential, HernquistPotential, NFWPotential, vcirc, tdyn
 from galaxy_intitialisation import elliptical_galaxy_gen
 from tqdm import tqdm
 from star_types import get_random_star
@@ -110,7 +110,17 @@ class Galaxy:
             if potential['type'] == 'Miyamoto-Nagai': # Miyamoto-Nagai (Axisymmetric potentials)
                 density = lambda R, z: potential['galpy_potential'].dens(R, z, 0)
                 print(f"Num. bodies in potential {potential['type']}: {pot_bodies}")
-                samples = metropolis_hastings(density, 2, pot_bodies)
+                #samples = metropolis_hastings(density, 2, pot_bodies)
+                
+                if pot_bodies < 100000:
+                    num_samples = 100000
+                else:
+                    num_samples = pot_bodies
+                samples = metropolis_hastings(density, 2, num_samples)
+                np.random.shuffle(samples)
+                #print(f"Samples: {samples}")
+                samples = samples[:pot_bodies] 
+                
                 theta = np.random.uniform(0, 2*np.pi, pot_bodies)
                 
                 R = samples[:, 0]
@@ -236,6 +246,44 @@ class Galaxy:
 
         plt.savefig(f'backend/galaxy_plots/{self.name}_density_hexbin.png')
         plt.show()
+    
+    # Plot hexbin of the theoretical density of the galaxy
+    def plot_theoretical_mass(self):
+        max_radius = self.get_galaxy_max_radius()*3
+        R = np.linspace(0, max_radius, 1000)
+        z = np.linspace(-max_radius, max_radius, 1000)
+        R, z = np.meshgrid(R, z)
+        
+        # Calculate the theoretical mass for each R and z
+        total_mass = np.zeros(np.shape(R))
+        
+        for component in self.components:
+            if not component['dark matter']:
+                for potential in component['potentials']:
+                    if potential['type'] == 'Miyamoto-Nagai':
+                        # Find density of potential across meshgrid
+                        density = potential['galpy_potential'].dens(R, z, 0)
+                        total_mass += density
+                    if potential['type'] == 'Hernquist':
+                        # Find density in a line, then move around a semi-circle to meshgrid
+                        density = potential['galpy_potential'].dens(np.sqrt(R**2 + z**2 + 1e-10), 0)
+                        total_mass += density
+
+                        """for i in range(np.size(R, axis=0)):
+                            for j in range(np.size(R, axis=1)):
+                                density = potential['galpy_potential'].dens(np.sqrt(R[i, j]**2 + z[i, j]**2 + 1e-10), 0)
+                                total_mass += density"""
+        
+        plt.figure()
+        plt.hexbin(R.flatten(), z.flatten(), C=total_mass.flatten(), gridsize=100, cmap='plasma')
+        plt.colorbar()
+        plt.title(f'{self.name} Theoretical Density')
+        plt.xlabel('R (kpc)')
+        plt.ylabel('z (kpc)')
+        
+        #plt.savefig(f'backend/galaxy_plots/{self.name}_theoretical_density_hexbin.png')
+        plt.show()
+        
         
     def plot_component_scatter(self):
         plt.figure()
@@ -340,6 +388,7 @@ def main():
     galaxy = Galaxy('backend/galaxies/basic_galaxy.json', num_bodies=10000)
     print(galaxy.total_mass)
     galaxy.plot_scatter_density()
+    galaxy.plot_theoretical_mass()
     #galaxy.plot_component_scatter()
     galaxy.plot_rotational_vel()
     galaxy.plot_full_galaxy()

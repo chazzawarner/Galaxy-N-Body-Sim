@@ -3,35 +3,57 @@ import matplotlib.pyplot as plt
 from galpy.potential import MiyamotoNagaiPotential, HernquistPotential
 from tqdm import tqdm
 
-# Metropolis-Hastings MCMC algorithm for multivariate distributions
-def metropolis_hastings(target_density, dimensions, n_samples, burn_in=1000):
+# Metropolis-Hastings MCMC algorithm for multivariate distributions i.e. Miyaoto-Nagai potential
+def metropolis_hastings(target_density, dimensions, n_samples, burn_in=10000):
+    # Initialise the chain
     n_samples += burn_in
     x0 = np.zeros(dimensions)
     xt = x0
     samples = np.zeros((n_samples, dimensions))
     print('Sampling using Metropolis-Hastings...')
+    
+    # Run the chain
     for i in tqdm(range(n_samples)):
+        # Generate a candidate sample
         xt_candidate = xt + np.random.normal(size=dimensions)
+        
+        # Accept or reject the candidate sample
         acceptance_probability = min(1, target_density(*xt_candidate) / target_density(*xt))
+        
+        # Accept the candidate sample with probability acceptance_probability
         if np.random.uniform() < acceptance_probability:
             xt = xt_candidate
+            
+        # Add the sample to the chain
         samples[i] = xt
             
+    # Return the samples after burn-in
     return samples[burn_in:]
 
 
 def main():
     P = lambda x: 3 * np.exp(-x*x/2) + np.exp(-(x - 4)**2/2)
-    Z = 10.0261955464
+    P_norm = lambda x: P(x) / (3 * np.sqrt(2 * np.pi) + np.sqrt(2 * np.pi))
+    samples_1k = metropolis_hastings(P, 1, 1000)
+    samples_10k = metropolis_hastings(P, 1, 10000)
+    samples_100k = metropolis_hastings(P, 1, 100000)
 
     x_vals = np.linspace(-10, 10, 1000)
-    y_vals = P(x_vals)
+    y_vals = P_norm(x_vals)
     plt.figure(1)
-    plt.plot(x_vals, y_vals, 'r', label='P(x)')
-    plt.legend(loc='upper right', shadow=True)
-    plt.savefig('backend/mcmc_plots/p_x.png')
+    plt.plot(x_vals, y_vals, 'r', label='P(x) normalised')
+    
+    plt.hist(samples_100k, bins=100, density=True, color='y', alpha=0.7, label='MCMC Samples (100k)')
+    #plt.hist(samples_10k, bins=100, density=True, color='g', alpha=0.5, label='MCMC Samples (10k)')
+    #plt.hist(samples_1k, bins=100, density=True, color='b', alpha=0.3, label='MCMC Samples (1k)')
+    
+    plt.legend()
+    plt.xlabel('x')
+    plt.ylabel('Density')
+    #plt.savefig('backend/mcmc_plots/p_x.png')
+    plt.show()
 
-    # Plot density for Miyamoto-Nagai potential
+    """# Plot density for Miyamoto-Nagai potential
     R = np.linspace(0.1, 10, 1000)
     z = np.linspace(-10, 10, 1000)
     a = 10
@@ -67,7 +89,7 @@ def main():
     plt.xlim(0, 5)
     plt.ylim(-1, 1)
     plt.savefig('backend/mcmc_plots/miyamoto_nagai_samples_hexbin.png')
-    plt.show()
+    plt.show()"""
 
 
 if __name__ == "__main__":
