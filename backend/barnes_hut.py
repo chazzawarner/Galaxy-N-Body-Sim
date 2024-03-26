@@ -34,7 +34,7 @@ class Node:
     
     def insert(self, body):
         epsilon = 1e-3  # Adjust this value as needed
-        body["position"] += epsilon * (np.random.rand(2) - 0.5)  # Add a small random offset to the position of the black hole
+        body["position"] += epsilon * (np.random.rand(2) - 0.5)  # Add a small random offset to the position to avoid divide by zero errors
         
         # If the node is empty, insert the body
         if self.children is None and self.mass == 0:
@@ -91,28 +91,29 @@ def create_quadtree(bodies):
     
     return quadtree
 
-def compute_force(node, body, theta, g_const=4.3009e-3):
+def compute_force(node, body, theta, smoothing_length, g_const):
     force = np.array([0.0, 0.0])
     epsilon = 1e-5
-
+    
     # Making sure the body is not interacting with itself
     if not np.array_equal(node.centre_of_mass, body["position"]):
     # If node is external (and not the body itself), calculate the force exerted by the body, adding it to the body's net force
         if node.children is None and node.mass > 0:
             r = node.centre_of_mass - body["position"]
             distance = np.linalg.norm(r) + epsilon
-            force += (g_const * node.mass * body["mass"] / distance**3) * r
+            force += (g_const * node.mass * body["mass"] / (smoothing_length**2 + distance**2)**(3/2)) * r
         
         # Calculate s/d, if < theta, use the node as a single body, calculate the force exerted by the body, adding it to the body's net force
         elif np.linalg.norm(node.centre - body["position"]) / node.size < theta:
             r = node.centre_of_mass - body["position"]
             distance = np.linalg.norm(r) + epsilon
-            force += (g_const * node.mass * body["mass"] / distance**3) * r
+            #force += (g_const * node.mass * body["mass"] / distance**3) * r
+            force += (g_const * node.mass * body["mass"] / (smoothing_length**2 + distance**2)**(3/2)) * r
         
         # If s/d > theta and node is internal, run procedure recursively on each of the node's children
         elif node.children is not None:
             for child in node.children:
-                force += compute_force(node.children[child], body, theta)
+                force += compute_force(node.children[child], body, theta, smoothing_length, g_const)
                 
         # If node is empty, do nothing
         else:
@@ -135,6 +136,8 @@ def compute_all_forces(bodies, theta=0.5, g_const=4.3009e-3):
     
     forces = np.zeros((len(bodies["mass"]), 2))
     
+    smoothing_length = 1.5 * (len(bodies["mass"]) ** (-0.44)) # Optimal smoothing length for Barnes-Hut algorithm using Hernquist
+    
     time.start = time.time()
     
     """for i in range(len(bodies["mass"])):
@@ -151,7 +154,7 @@ def compute_all_forces(bodies, theta=0.5, g_const=4.3009e-3):
     # Create a multiprocessing Pool
     with Pool() as p:
         # Create a list of arguments for each body
-        args = [(quadtree, {"mass": bodies["mass"][i], "position": bodies["position"][i]}, theta) for i in range(len(bodies["mass"]))]
+        args = [(quadtree, {"mass": bodies["mass"][i], "position": bodies["position"][i]}, theta, smoothing_length, g_const) for i in range(len(bodies["mass"]))]
         # Use the Pool's map function to compute the forces in parallel
         forces = list(tqdm(p.imap(compute_force_helper, args), total=len(args)))
         
@@ -215,5 +218,6 @@ def main():
     plt.show()
     
 
-#main()
+if __name__ == '__main__':
+    main()
     

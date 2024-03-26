@@ -2,7 +2,7 @@ import numpy as np
 import time
 from barnes_hut import compute_all_forces as barnes_hut
 
-g_const = 4.3009e-3  # Gravitational constant in units of parsecs * (km/s)^2 / solar_mass
+#g_const = 4.3009e-3  # Gravitational constant in units of parsecs * (km/s)^2 / solar_mass
     
 # Define compute_force method with brute force algorithm
 def brute_force(self):
@@ -14,7 +14,7 @@ def brute_force(self):
             if i != j:
                 r = self.bodies[j].position - self.bodies[i].position
                 r_norm = np.linalg.norm(r)
-                force = r * self.bodies[i].mass * self.bodies[j].mass * g_const / r_norm**3
+                force = r * self.bodies[i].mass * self.bodies[j].mass #* g_const / r_norm**3
                 self.forces[i] += force
     time_end = time.time()
     print(f"Time taken to compute forces: {time_end - time_start} seconds (brute force method)")
@@ -41,7 +41,7 @@ class Body:
  
 # Defining the NBody class
 class NBody:
-    def __init__(self, bodies):
+    def __init__(self, bodies, g_const=4.3009e-3):
         self.bodies = bodies # List of Body objects
         """{
             "mass": [body.mass for body in bodies],
@@ -50,12 +50,13 @@ class NBody:
             } #bodies """
         self.n = len(bodies)
         self.forces = np.zeros((self.n, 2))
+        self.g_const = g_const
     
     def compute_force(self, method="barnes_hut"):
         if method == "brute_force":
             forces = brute_force(self.bodies)
         elif method == "barnes_hut":
-            forces = barnes_hut(self.bodies, g_const=g_const, theta=0.3)
+            forces = barnes_hut(self.bodies, g_const=self.g_const, theta=0.7)
         return forces
            
     # Remove outlying bodies if body is more than x standard deviations from the mean
@@ -101,7 +102,11 @@ class NBody:
         
         epsilon = 1e-8
         
-        self.bodies["velocity"] += self.forces * dt / (np.array(self.bodies["mass"]).reshape(-1, 1) + epsilon) # Update the velocity of the bodies
+        #self.bodies["velocity"] += self.forces * dt / (np.array(self.bodies["mass"]).reshape(-1, 1) + epsilon) # Update the velocity of the bodies
+        self.bodies["velocity"] = np.array(self.bodies["velocity"])
+        self.forces = np.array(self.forces)
+        self.bodies["velocity"] += self.forces * dt / (np.array(self.bodies["mass"]).reshape(-1, 1) + epsilon)
+        
         #self.bodies["velocity"][0] = np.array([0.0, 0.0]) # Set BH velocity to zero
         self.bodies["position"] += self.bodies["velocity"] * dt # Update the position of the bodies
         

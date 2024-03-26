@@ -43,8 +43,14 @@ function setup() {
         frameRate(10);
 
         // Find the maximum position in the simulation in time 0
-        max_x_diff = max(parsedData.filter(d => d.time === 0).map(d => d.x)) - min(parsedData.filter(d => d.time === 0).map(d => d.x));
-        max_y_diff = max(parsedData.filter(d => d.time === 0).map(d => d.y)) - min(parsedData.filter(d => d.time === 0).map(d => d.y));
+        //max_x_diff = max(parsedData.filter(d => d.time === 0).map(d => d.x)) - min(parsedData.filter(d => d.time === 0).map(d => d.x));
+       // max_y_diff = max(parsedData.filter(d => d.time === 0).map(d => d.y)) - min(parsedData.filter(d => d.time === 0).map(d => d.y));
+        //sim_pos_max = max(max_x_diff, max_y_diff);
+
+        // Find maximum a*stddev(x) and a*stddev(y) for the simulation
+        a=5;
+        max_x_diff = a * math.std(parsedData.filter(d => d.time === 0).map(d => d.x));
+        max_y_diff = a * math.std(parsedData.filter(d => d.time === 0).map(d => d.y));
         sim_pos_max = max(max_x_diff, max_y_diff);
 
         // Find the maximum mass in the simulation and calculate the mass scale
@@ -79,11 +85,11 @@ function setup() {
 var playing = false;
 var current_timestep = 0;
 var sim_pos_max; // Maximum position in the simulation (minimum is 0)
-var sim_padding_scale = 0.3; // Padding around the simulation
+var sim_padding_scale = 0.1; // Padding around the simulation
 const c = 2.99792e5; // Speed of light in km/s
 const G = 4.3009e-3  // Gravitational constant in units of parsecs * (km/s)^2 / solar_mass
 var mass_scale; // Scale for the mass of the bodies to be rendered
-var trail = false; // Render the trail of the bodies
+var trail = true; // Render the trail of the bodies
 
 console.log("Canvas padding boundary: " + (canvas_width*sim_padding_scale) + " " + canvas_width*(1-sim_padding_scale))
 
@@ -104,8 +110,8 @@ function renderData() {
   
   for (let i = 0; i < current_data.length; i++) {
     //print(current_data[i].x + " " + current_data[i].y)
-    let x = map(current_data[i].x, 0, sim_pos_max, canvas_width*sim_padding_scale, canvas_width - canvas_width*sim_padding_scale);
-    let y = map(current_data[i].y, 0, sim_pos_max, canvas_width*sim_padding_scale, canvas_width - canvas_width*sim_padding_scale);
+    let x = map(current_data[i].x, -0.5*sim_pos_max, 0.5*sim_pos_max, canvas_width*sim_padding_scale, canvas_width - canvas_width*sim_padding_scale);
+    let y = map(current_data[i].y, -0.5*sim_pos_max, 0.5*sim_pos_max, canvas_width*sim_padding_scale, canvas_width - canvas_width*sim_padding_scale);
     let mass = current_data[i].mass;
     let r = map(mass, 0, 2, 1, 3, true);
     //fill(255, 255, 255, 80);
@@ -123,8 +129,8 @@ function renderData() {
       let trail_data = parsedData.filter(d => d.time === current_timestep - 1);
       
       if (trail_data.length != 0) {
-        let trail_x = map(trail_data[i].x, 0, sim_pos_max, canvas_width*sim_padding_scale, canvas_width - canvas_width*sim_padding_scale);
-        let trail_y = map(trail_data[i].y, 0, sim_pos_max, canvas_width*sim_padding_scale, canvas_width - canvas_width*sim_padding_scale);
+        let trail_x = map(trail_data[i].x, -0.5*sim_pos_max, 0.5*sim_pos_max, canvas_width*sim_padding_scale, canvas_width - canvas_width*sim_padding_scale);
+        let trail_y = map(trail_data[i].y, -0.5*sim_pos_max, 0.5*sim_pos_max, canvas_width*sim_padding_scale, canvas_width - canvas_width*sim_padding_scale);
 
         stroke(colour);
         strokeWeight(2);

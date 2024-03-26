@@ -6,10 +6,11 @@ from mcmc import metropolis_hastings
 from galpy.potential import MiyamotoNagaiPotential, HernquistPotential, NFWPotential, vcirc, tdyn, mass
 from galaxy_intitialisation import elliptical_galaxy_gen
 from tqdm import tqdm
+from star_types import get_random_star
 
 # Galaxy generation function
 class Galaxy:
-    def __init__(self, json_file, num_bodies=1000000, g_const=1, force_update=False, pos_units=u.kpc, vel_units=u.km/u.s, mass_units=u.M_sun, density_units=u.M_sun/u.kpc**3, potential_units=u.km**2/u.s**2, time_units=u.Gyr, angle_units=u.rad):
+    def __init__(self, json_file, num_bodies=1000000, g_const=1, pos_units=u.kpc, vel_units=u.km/u.s, mass_units=u.M_sun, density_units=u.M_sun/u.kpc**3, potential_units=u.km**2/u.s**2, time_units=u.Gyr, angle_units=u.rad):
         # Load JSON file
         with open(json_file, 'r') as f:
             galaxy_json = json.load(f)
@@ -21,27 +22,8 @@ class Galaxy:
         self.g_const = g_const
         self.total_mass = self.get_total_mass()
         
-            
-
-        # Determine whether we need to initalise the galaxy or load it from a file
-        ## Checking that all non-dark matter components have bodies
-        if all('bodies' in component and not component['dark matter'] for component in self.components) and not force_update:
-            total_bodies = sum(len(component['bodies']['positions']) for component in self.components)
-            if np.isclose(total_bodies, num_bodies, rtol=0.1):
-                print(f"Galaxy '{self.name}' is already initalised to specified number of bodies")
-                print("Reinitialising potenials...")
-                self.set_galpy_potentials(pos_units, mass_units)
-            else:
-                print(f"Galaxy '{self.name}' has an incorrect number of bodies ({total_bodies} bodies)")
-                print("Reinitialising galaxy...")
-                self.initialise_galaxy(pos_units, mass_units)
-        else:
-            if force_update:
-                print("Forcing galaxy reinitialisation...")
-            else:
-                print(f"Galaxy '{self.name}' has no bodies")
-                print("Initialising galaxy...")
-            self.initialise_galaxy(pos_units, mass_units)
+        # Initialise galaxy
+        self.initialise_galaxy(pos_units, mass_units)
         
     # Initialise galaxy from the provided JSON file
     def initialise_galaxy(self, pos_units, mass_units):
@@ -55,10 +37,13 @@ class Galaxy:
         # Generate bodies from components
         for component in self.components:
             if not component['dark matter']:
-                num_bodies_comp = round((self.get_component_mass(component)/self.total_mass) * self.num_bodies) # Number of bodies in component
-                positions = self.generate_positions(component, num_bodies_comp)
+                comp_mass = self.get_component_mass(component)
+                num_bodies_comp = round((comp_mass/self.total_mass) * self.num_bodies) # Number of bodies in component
+                
+                positions = self.generate_positions(component, num_bodies_comp, comp_mass)
                 velocities = self.generate_velocities(positions, self.total_potential)
-                masses = np.full(num_bodies_comp, self.get_component_mass(component)/num_bodies_comp)
+                #masses = np.full(np.size(positions, axis=0), comp_mass/num_bodies_comp)
+                masses = [get_random_star() for i in range(np.size(positions, axis=0))]
                 component.update({'bodies': {'positions': positions, 'velocities': velocities, 'masses': masses}})
                 
         # Update JSON file with galaxy data
@@ -112,16 +97,19 @@ class Galaxy:
         return total_potential
     
     # Generate positions of bodies from component
-    def generate_positions(self, component, num_bodies):
-        print(f'Generating {num_bodies} bodies for {component["name"]}')
+    def generate_positions(self, component, num_bodies_comp, comp_mass):
+        print(f'Generating {num_bodies_comp} bodies for component {component["name"]}')
         positions = np.empty((0, 3))
         for potential in component['potentials']:
             
             pot_mass = potential['parameters']['mass']
-            pot_bodies = round((pot_mass/self.get_component_mass(component)) * num_bodies)
+            print(f"Potential mass: {pot_mass}")
+            pot_bodies = round((pot_mass/comp_mass) * num_bodies_comp)
+            print(f"Potential bodies: {pot_bodies}")
             
             if potential['type'] == 'Miyamoto-Nagai': # Miyamoto-Nagai (Axisymmetric potentials)
                 density = lambda R, z: potential['galpy_potential'].dens(R, z, 0)
+                print(f"Num. bodies in potential {potential['type']}: {pot_bodies}")
                 samples = metropolis_hastings(density, 2, pot_bodies)
                 theta = np.random.uniform(0, 2*np.pi, pot_bodies)
                 
@@ -131,12 +119,15 @@ class Galaxy:
                 x = R * np.cos(theta)
                 y = R * np.sin(theta)
                 
-                positions = np.vstack((positions, np.column_stack((x, y, z))))
-                print(f"Num. bodies in {potential['type']}: {pot_bodies}")
+                positions = np.vstack((positions, np.array([x, y, z]).T))
+                print(positions)
+                print(f"Generated {len(positions)} positions, num. bodies: {pot_bodies}")
+                
                 
             else: # Hernquist
                 #density = lambda r: potential['galpy_potential'].dens(r + 1e-10, 0)
                 #samples = metropolis_hastings(density, 1, num_bodies)
+                print(f"Num. bodies in potential {potential['type']}: {pot_bodies}")
                 samples = elliptical_galaxy_gen(pot_bodies, a=potential['parameters']['a'])
                 
                 """# Scale samples to the radius of "a" - a precautionary measure
@@ -148,8 +139,8 @@ class Galaxy:
                 samples = samples[samples < self.get_galaxy_max_radius()]
                 
                 samples = samples.reshape(-1, 1)
-                print(samples)
-                print(f"Num. bodies in {potential['type']}: {pot_bodies}")
+                #print(samples)
+                
                 
                 # Generate random directions for bodies
                 direction = np.random.normal(size=(np.size(samples), 3))
@@ -180,6 +171,7 @@ class Galaxy:
     def generate_velocities(self, positions, total_potential):
         velocities = np.empty((0, 3))
         
+        print('Calculating rotational velocities')
         for position in tqdm(positions):
             radius = np.sqrt(position[0]**2 + position[1]**2 + position[2]**2)
             
@@ -320,6 +312,22 @@ class Galaxy:
         with open(filename, 'w') as f:
             json.dump({'name': self.name, 'components': components_copy}, f, indent=4)
         
+    # Return the galaxy bodies as a dictionary
+    def get_galaxy(self):
+        bodies = {
+            "position": np.empty((0, 3)),
+            "velocity": np.empty((0, 3)),
+            "mass": np.empty(0)
+        }
+        
+        for component in self.components:
+            if 'bodies' in component:
+                bodies['position'] = np.vstack((bodies['position'], component['bodies']['positions']))
+                bodies['velocity'] = np.vstack((bodies['velocity'], component['bodies']['velocities']))
+                bodies['mass'] = np.hstack((bodies['mass'], component['bodies']['masses']))
+            
+        return bodies
+        
         
         
                     
@@ -329,14 +337,23 @@ class Galaxy:
     
 
 def main():
-    galaxy = Galaxy('backend/galaxies/paper_galaxy.json', num_bodies=10000)
+    galaxy = Galaxy('backend/galaxies/basic_galaxy.json', num_bodies=10000)
     print(galaxy.total_mass)
-    """galaxy.plot_scatter_density()
-    galaxy.plot_component_scatter()
-    galaxy.plot_rotational_vel()"""
-    #galaxy.plot_full_galaxy()
-    print(f"Dynamical time: {galaxy.get_t_dyn()} Gyr")
-    
+    galaxy.plot_scatter_density()
+    #galaxy.plot_component_scatter()
+    galaxy.plot_rotational_vel()
+    galaxy.plot_full_galaxy()
+    """print(f"Dynamical time: {galaxy.get_t_dyn()} Gyr")
+    #print(f"To return: {galaxy.get_galaxy()}")
+    bodies = galaxy.get_galaxy()
+    print(f"Total mass of bodies: {np.sum(bodies['mass'])}")
+    print(f"Predicted total mass: {galaxy.total_mass}")
+    print(f"Requested number of bodies: {galaxy.num_bodies}")
+    print(np.size(bodies['mass']))
+    print(np.size(bodies['position'], axis=0))
+    print(np.shape(bodies['position']))
+    print(np.size(bodies['velocity'])) 
+    print(np.shape(bodies['velocity']))  """ 
     
 if __name__ == "__main__":
     main()

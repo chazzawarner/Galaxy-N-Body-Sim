@@ -9,6 +9,7 @@ def metropolis_hastings(target_density, dimensions, n_samples, burn_in=1000):
     x0 = np.zeros(dimensions)
     xt = x0
     samples = np.zeros((n_samples, dimensions))
+    print('Sampling using Metropolis-Hastings...')
     for i in tqdm(range(n_samples)):
         xt_candidate = xt + np.random.normal(size=dimensions)
         acceptance_probability = min(1, target_density(*xt_candidate) / target_density(*xt))
@@ -58,7 +59,7 @@ def main():
     plt.figure(3)
     xmin, xmax = 0, 5
     ymin, ymax = -1, 1
-    plt.hexbin(samples[:, 0]/a, samples[:, 1]/a, gridsize=50, cmap='plasma', extent=[xmin, xmax, ymin, ymax], bins='log')
+    plt.hexbin(samples[:, 0]/a, samples[:, 1]/a, gridsize=100, cmap='plasma', extent=[xmin, xmax, ymin, ymax], bins='log')
     plt.colorbar()
     plt.title('Miyamoto-Nagai Potential Samples')
     plt.xlabel('R/a')

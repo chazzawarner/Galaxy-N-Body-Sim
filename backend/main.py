@@ -3,13 +3,16 @@ import csv
 from numpy import random
 from nbody import NBody
 from galaxy_distribution import galaxy_generation
+from galaxy_distribution2 import Galaxy
 import time
 from datetime import datetime
 import cProfile
+import astropy.units as u
+from astropy.constants import G
 
 num_bodies = 100
 timesteps = 100
-timestep = 1
+timestep = 0.5
 bounding_box = 46.56e3 # Size of the bounding box in parsecs (i.e. the diameter of the galaxy)
 bh_mass = 3.5e9 # Mass of the black hole in solar masses
 g_const = 4.3009e-3
@@ -36,7 +39,20 @@ def main():
     #bodies[0].mass = bh_mass  # Set the mass of the first body to be much larger than the others
     #bodies[0].position = np.array([bounding_box/2, bounding_box/2])  # Set the position of the first body to the origin
     #bodies[0].velocity = np.array([0.0, 0.0])  # Set the velocity of the first body to zero"""
-    bodies = galaxy_generation(num_bodies, bounding_box)
+    #bodies = galaxy_generation(num_bodies, bounding_box)
+    galaxy = Galaxy('backend/galaxies/basic_galaxy.json', num_bodies=1000)
+    bodies = galaxy.get_galaxy()
+    
+    # Only consider the x and y coordinates
+    bodies["position"] = bodies["position"][:, :2] # In units of kpc
+    bodies["velocity"] = bodies["velocity"][:, :2] # In units of km/s
+    #print(bodies)
+    
+    # Convert postions to parsecs
+    bodies["position"] = bodies["position"] * 1e3
+    
+    g_const = G.to_value(u.pc**3 / (u.M_sun * u.s**2))
+    print(f"G: {g_const}")
     nbody = NBody(bodies)
     
     print("Total mass of bodies: ", np.sum(nbody.bodies["mass"]))
