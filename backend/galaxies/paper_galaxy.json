@@ -1,5 +1,6 @@
 {
     "name": "Jason the Galaxy",
+    "dat_file": "/backend/galaxies/jason.dat",
     "components": [
         {
             "name": "Stellar Disk",
@@ -58,7 +59,7 @@
                 {
                     "type": "NFW",
                     "parameters": {
-                        "mass": 1e11,
+                        "mass": 1e20,
                         "a": 8.5
                     }
                 }

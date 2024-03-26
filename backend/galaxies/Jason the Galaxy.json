@@ -1,0 +1,34 @@
+{
+    "name": "Jason the Galaxy",
+    "components": [
+        {
+            "name": "Stellar Disk",
+            "dark matter": false,
+            "potentials": [
+                {
+                    "type": "Miyamoto-Nagai",
+                    "parameters": {
+                        "mass": 66000000000.0,
+                        "a": 5.81,
+                        "b": 0.3
+                    }
+                },
+                {
+                    "type": "Miyamoto-Nagai",
+                    "parameters": {
+                        "mass": 29000000000.0,
+                        "a": 17.43,
+                        "b": 0.3
+                    }
+                },
+                {
+                    "type": "Miyamoto-Nagai",
+                    "parameters": {
+                        "mass": 3300000000.0,
+                        "a": 34.86,
+                        "b": 0.3
+                    }
+                }
+            ],
+            "bodies": {
+                "positions": 

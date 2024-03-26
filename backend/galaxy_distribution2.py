@@ -3,33 +3,54 @@ import matplotlib.pyplot as plt
 import json
 import astropy.units as u
 from mcmc import metropolis_hastings
-from galpy.potential import MiyamotoNagaiPotential, HernquistPotential, NFWPotential
+from galpy.potential import MiyamotoNagaiPotential, HernquistPotential, NFWPotential, vcirc, tdyn, mass
 from galaxy_intitialisation import elliptical_galaxy_gen
+from tqdm import tqdm
 
 # Galaxy generation function
 class Galaxy:
-    def __init__(self, name, components, num_bodies=1000000, g_const=1, pos_units=u.kpc, vel_units=u.km/u.s, mass_units=u.M_sun, density_units=u.M_sun/u.kpc**3, potential_units=u.km**2/u.s**2, time_units=u.Gyr, angle_units=u.rad):
-        self.name = name
-        self.components = components
+    def __init__(self, json_file, num_bodies=1000000, g_const=1, force_update=False, pos_units=u.kpc, vel_units=u.km/u.s, mass_units=u.M_sun, density_units=u.M_sun/u.kpc**3, potential_units=u.km**2/u.s**2, time_units=u.Gyr, angle_units=u.rad):
+        # Load JSON file
+        with open(json_file, 'r') as f:
+            galaxy_json = json.load(f)
+        
+        self.file = json_file
+        self.name = galaxy_json['name']
+        self.components = galaxy_json['components']
         self.num_bodies = num_bodies
         self.g_const = g_const
         self.total_mass = self.get_total_mass()
         
-        # Set component potentials to galpy potentials using astropy units
-        for component in self.components:
-            for potential in component['potentials']:
-                if potential['type'] == 'Miyamoto-Nagai':
-                    parameters = potential['parameters']
-                    potential['galpy_potential'] = MiyamotoNagaiPotential(a=parameters['a']*pos_units, b=parameters['b']*pos_units, normalize=1)
-                elif potential['type'] == 'Hernquist':
-                    parameters = potential['parameters']
-                    potential['galpy_potential'] = HernquistPotential(a=parameters['a']*pos_units)
-                elif potential['type'] == 'NFW':
-                    potential['parameters'].update({'normalise': 1})
-                    potential['galpy_potential'] = NFWPotential(a=parameters['a']*pos_units)
+            
+
+        # Determine whether we need to initalise the galaxy or load it from a file
+        ## Checking that all non-dark matter components have bodies
+        if all('bodies' in component and not component['dark matter'] for component in self.components) and not force_update:
+            total_bodies = sum(len(component['bodies']['positions']) for component in self.components)
+            if np.isclose(total_bodies, num_bodies, rtol=0.1):
+                print(f"Galaxy '{self.name}' is already initalised to specified number of bodies")
+                print("Reinitialising potenials...")
+                self.set_galpy_potentials(pos_units, mass_units)
+            else:
+                print(f"Galaxy '{self.name}' has an incorrect number of bodies ({total_bodies} bodies)")
+                print("Reinitialising galaxy...")
+                self.initialise_galaxy(pos_units, mass_units)
+        else:
+            if force_update:
+                print("Forcing galaxy reinitialisation...")
+            else:
+                print(f"Galaxy '{self.name}' has no bodies")
+                print("Initialising galaxy...")
+            self.initialise_galaxy(pos_units, mass_units)
+        
+    # Initialise galaxy from the provided JSON file
+    def initialise_galaxy(self, pos_units, mass_units):
+        # Set galpy potentials for each component
+        self.set_galpy_potentials(pos_units, mass_units)
         
         # Calculate total potential of galaxy to use for rotational velocity
         self.total_potential = self.get_total_potential()
+        self.rotational_velocities = []
         
         # Generate bodies from components
         for component in self.components:
@@ -37,8 +58,27 @@ class Galaxy:
                 num_bodies_comp = round((self.get_component_mass(component)/self.total_mass) * self.num_bodies) # Number of bodies in component
                 positions = self.generate_positions(component, num_bodies_comp)
                 velocities = self.generate_velocities(positions, self.total_potential)
-                component.update({'bodies': {'positions': positions, 'velocities': velocities}})
-                  
+                masses = np.full(num_bodies_comp, self.get_component_mass(component)/num_bodies_comp)
+                component.update({'bodies': {'positions': positions, 'velocities': velocities, 'masses': masses}})
+                
+        # Update JSON file with galaxy data
+        #self.export_galaxy(f'backend/galaxies/{self.name}.json')
+    
+    # Set galpy potentials for each component
+    def set_galpy_potentials(self, pos_units, mass_units):
+        # Set component potentials to galpy potentials using astropy units
+        for component in self.components:
+            for potential in component['potentials']:
+                if potential['type'] == 'Miyamoto-Nagai':
+                    parameters = potential['parameters']
+                    potential['galpy_potential'] = MiyamotoNagaiPotential(amp=parameters['mass']*mass_units, a=parameters['a']*pos_units, b=parameters['b']*pos_units)
+                elif potential['type'] == 'Hernquist':
+                    parameters = potential['parameters']
+                    potential['galpy_potential'] = HernquistPotential(amp=parameters['mass']*mass_units, a=parameters['a']*pos_units)
+                elif potential['type'] == 'NFW':
+                    potential['parameters'].update({'normalise': 1})
+                    potential['galpy_potential'] = NFWPotential(amp=parameters['mass']*mass_units, a=parameters['a']*pos_units)
+        
                     
     # Get total mass of galaxy from all components    
     def get_total_mass(self):
@@ -63,9 +103,11 @@ class Galaxy:
             for potential in component['potentials']:
                 potentials.append(potential['galpy_potential'])
         
-        total_potential = potentials[0]
-        for potential in potentials[1:]:
-            total_potential += potential
+        total_potential = potentials
+        """for potential in potentials[1:]:
+            total_potential.__add__(potential)"""
+        
+        print(f"Total potential: {total_potential}")
         
         return total_potential
     
@@ -135,11 +177,54 @@ class Galaxy:
                         max_radius = potential['parameters']['a']
         return max_radius
     
-    def generate_velocities(self, bodies, total_potential):
-        pass
+    def generate_velocities(self, positions, total_potential):
+        velocities = np.empty((0, 3))
+        
+        for position in tqdm(positions):
+            radius = np.sqrt(position[0]**2 + position[1]**2 + position[2]**2)
+            
+            # Calculate the rotational speed of the body
+            #v_circ = total_potential.vcirc(radius)
+            v_circ = vcirc(total_potential, radius * u.kpc) #!!
+            
+            # Find the unit vector perpendicular to the direction of the body
+            velocities_direction = np.array([-position[1], position[0], 0])
+            velocities_direction /= np.linalg.norm(velocities_direction)
+            
+            # Calculate the rotational velocity of the body
+            velocity = velocities_direction * v_circ
+            velocities = np.vstack((velocities, velocity))
+            self.rotational_velocities.append([v_circ, radius])
+        
+        return velocities
     
     def plot_rotational_vel(self):
-        pass
+        r = np.linspace(1e-10, self.get_galaxy_max_radius(), 1000)
+        
+        plt.figure()
+        
+        for component in self.components:
+            total_component_potential = component['potentials'][0]['galpy_potential']
+            for potential in component['potentials'][1:]:
+                total_component_potential.__add__(potential['galpy_potential'])
+            v_circ_component = total_component_potential.vcirc(r * u.kpc)
+            #print(f"v_circ for {component['name']}: {v_circ_component}")
+            
+            plt.plot(r, v_circ_component, label=component['name'], linestyle='--')
+        
+        #v_circ_total = self.total_potential.vcirc(r * u.kpc)
+        v_circ_total = vcirc(self.total_potential, r * u.kpc)
+        plt.plot(r, v_circ_total, label='Total')
+        plt.legend()
+        plt.title(f'{self.name} Rotational Velocity')
+        plt.xlabel('r (kpc)')
+        plt.ylabel('v_circ (km/s)')
+        plt.savefig(f'backend/galaxy_plots/{self.name}_rotational_velocity.png')
+        plt.show()
+            
+            
+                
+        
     
     # Plot density of galaxy in a hexbin plot (as function of R and z)
     def plot_scatter_density(self):
@@ -176,6 +261,64 @@ class Galaxy:
         #plt.xscale('log')
         #plt.savefig(f'backend/galaxy_plots/{self.name}_component_scatter.png')
         plt.show()
+    
+    # Plot galaxy as a 3D scatter plot and side on views (2x2 plot)
+    def plot_full_galaxy(self):
+        positions = np.empty((0, 3))
+        for component in self.components:
+            if 'bodies' in component:
+                positions = np.vstack((positions, component['bodies']['positions']))
+        
+        fig, axs = plt.subplots(2, 2, figsize=(8, 8))  # Increase the figure size
+        
+        ## 3D plot
+        ax = fig.add_subplot(2, 2, 1, projection='3d')
+        ax.scatter(positions[:, 0], positions[:, 1], positions[:, 2], s=1)
+        ax.set_title("3D view")
+        
+        ## Remove empty graph/axes for the 3D plot
+        fig.delaxes(axs[0, 0])
+        
+        ## 2D Side view
+        ax = axs[0, 1]
+        #ax.scatter(positions[:, 1], positions[:, 2], s=1)
+        hb = ax.hexbin(positions[:, 1], positions[:, 2], gridsize=50, cmap='plasma', bins='log')
+        hb.set_facecolor('black')  # Set the hexbin plot background color to black
+        ax.set_title("2D Side view")
+        ax.set_aspect('equal', 'box')
+        
+        ## 2D Top view
+        ax = axs[1, 0]
+        #ax.scatter(positions[:, 0], positions[:, 1], s=1)
+        hb = ax.hexbin(positions[:, 0], positions[:, 1], gridsize=50, cmap='plasma', bins='log')
+        hb.set_facecolor('black')  # Set the hexbin plot background color to black
+        ax.set_title("2D Top view")
+        ax.set_aspect('equal', 'box')
+        
+        ## 2D Front view
+        ax = axs[1, 1]
+        #ax.scatter(positions[:, 0], positions[:, 2], s=1)
+        ax.hexbin(positions[:, 0], positions[:, 2], gridsize=50, cmap='plasma', bins='log', facecolor='black')
+        ax.set_title("2D Front view")
+        ax.set_aspect('equal', 'box')
+        
+        plt.tight_layout()
+        plt.show()
+        
+    # Calculate dynamical time of galaxy
+    def get_t_dyn(self):
+        t_dyn = tdyn(self.total_potential, self.get_galaxy_max_radius() * u.kpc)
+        return t_dyn
+    
+    # Export galaxy 
+    def export_galaxy(self, filename):
+        components_copy = self.components.copy()
+        for component in components_copy:
+            for potential in component['potentials']:
+                del potential['galpy_potential']
+                
+        with open(filename, 'w') as f:
+            json.dump({'name': self.name, 'components': components_copy}, f, indent=4)
         
         
         
@@ -186,12 +329,13 @@ class Galaxy:
     
 
 def main():
-    with open('backend/galaxies/paper_galaxy.json', 'r') as f:
-        galaxy_json = json.load(f)
-    galaxy = Galaxy(galaxy_json['name'], galaxy_json['components'], num_bodies=100000)
+    galaxy = Galaxy('backend/galaxies/paper_galaxy.json', num_bodies=10000)
     print(galaxy.total_mass)
-    galaxy.plot_scatter_density()
+    """galaxy.plot_scatter_density()
     galaxy.plot_component_scatter()
+    galaxy.plot_rotational_vel()"""
+    #galaxy.plot_full_galaxy()
+    print(f"Dynamical time: {galaxy.get_t_dyn()} Gyr")
     
     
 if __name__ == "__main__":
