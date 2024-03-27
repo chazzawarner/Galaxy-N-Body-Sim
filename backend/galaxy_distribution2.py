@@ -108,10 +108,15 @@ class Galaxy:
             print(f"Potential bodies: {pot_bodies}")
             
             if potential['type'] == 'Miyamoto-Nagai': # Miyamoto-Nagai (Axisymmetric potentials)
+                # Initialise density function from potential
                 density = lambda R, z: potential['galpy_potential'].dens(R, z, 0)
                 print(f"Num. bodies in potential {potential['type']}: {pot_bodies}")
-                #samples = metropolis_hastings(density, 2, pot_bodies)
                 
+                # Sample from the density function using MCMC
+                samples = metropolis_hastings(density, 2, pot_bodies)
+                
+                """
+                # Alternative method to avoid banding of samples
                 if pot_bodies < 100000:
                     num_samples = 100000
                 else:
@@ -119,16 +124,20 @@ class Galaxy:
                 samples = metropolis_hastings(density, 2, num_samples)
                 np.random.shuffle(samples)
                 #print(f"Samples: {samples}")
-                samples = samples[:pot_bodies] 
+                samples = samples[:pot_bodies]
+                """
                 
+                # Generate random angles for bodies around the z-axis
                 theta = np.random.uniform(0, 2*np.pi, pot_bodies)
                 
+                # Convert from cylindrical to cartesian coordinates
                 R = samples[:, 0]
                 z = samples[:, 1]
                 
                 x = R * np.cos(theta)
                 y = R * np.sin(theta)
                 
+                # Add positions to component body positions array
                 positions = np.vstack((positions, np.array([x, y, z]).T))
                 print(positions)
                 print(f"Generated {len(positions)} positions, num. bodies: {pot_bodies}")
@@ -275,7 +284,7 @@ class Galaxy:
                                 total_mass += density"""
         
         plt.figure()
-        plt.hexbin(R.flatten(), z.flatten(), C=total_mass.flatten(), gridsize=100, cmap='plasma')
+        plt.hexbin(R.flatten(), z.flatten(), C=total_mass.flatten(), gridsize=100, cmap='plasma', bins='log')
         plt.colorbar()
         plt.title(f'{self.name} Theoretical Density')
         plt.xlabel('R (kpc)')
@@ -385,7 +394,7 @@ class Galaxy:
     
 
 def main():
-    galaxy = Galaxy('backend/galaxies/basic_galaxy.json', num_bodies=10000)
+    galaxy = Galaxy('backend/galaxies/basic_galaxy.json', num_bodies=100000)
     print(galaxy.total_mass)
     galaxy.plot_scatter_density()
     galaxy.plot_theoretical_mass()
