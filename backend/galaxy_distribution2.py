@@ -113,9 +113,9 @@ class Galaxy:
                 print(f"Num. bodies in potential {potential['type']}: {pot_bodies}")
                 
                 # Sample from the density function using MCMC
-                samples = metropolis_hastings(density, 2, pot_bodies)
+                #samples = metropolis_hastings(density, 2, pot_bodies)
                 
-                """
+                
                 # Alternative method to avoid banding of samples
                 if pot_bodies < 100000:
                     num_samples = 100000
@@ -125,7 +125,7 @@ class Galaxy:
                 np.random.shuffle(samples)
                 #print(f"Samples: {samples}")
                 samples = samples[:pot_bodies]
-                """
+                
                 
                 # Generate random angles for bodies around the z-axis
                 theta = np.random.uniform(0, 2*np.pi, pot_bodies)

@@ -1,6 +1,5 @@
 import numpy as np
 import csv
-from numpy import random
 from nbody import NBody
 from galaxy_distribution import galaxy_generation
 from galaxy_distribution2 import Galaxy
@@ -11,8 +10,9 @@ import astropy.units as u
 from astropy.constants import G
 
 num_bodies = 100
-timesteps = 100
-timestep = 1
+timesteps = 100 
+timestep = (1 * u.Gyr).to(u.s).value / 1e6
+#print(f"Time step: {timestep}")
 bounding_box = 46.56e3 # Size of the bounding box in parsecs (i.e. the diameter of the galaxy)
 bh_mass = 3.5e9 # Mass of the black hole in solar masses
 g_const = 4.3009e-3
@@ -40,6 +40,8 @@ def main():
     #bodies[0].position = np.array([bounding_box/2, bounding_box/2])  # Set the position of the first body to the origin
     #bodies[0].velocity = np.array([0.0, 0.0])  # Set the velocity of the first body to zero"""
     #bodies = galaxy_generation(num_bodies, bounding_box)
+    
+    print(f"Time step: {timestep} s")
 
     two_galaxies = True
     if two_galaxies:
@@ -61,7 +63,7 @@ def main():
         galaxy_2_bodies["position"] *= 1e3 # in parsecs instead of kpc
         
         total_distance = galaxy_1_radius + galaxy_2_radius + distance_between_galaxies
-        galaxy_1_bodies["position"] += np.array([total_distance/2, 0])
+        galaxy_1_bodies["position"] += np.array([total_distance/2, 1e3])
         galaxy_2_bodies["position"] -= np.array([total_distance/2, 0])
         
         galaxy_1_bodies["velocity"] -= np.array([approach_velocity, 0])

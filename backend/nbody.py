@@ -1,6 +1,7 @@
 import numpy as np
 import time
 from barnes_hut import compute_all_forces as barnes_hut
+import astropy.units as u
 
 #g_const = 4.3009e-3  # Gravitational constant in units of parsecs * (km/s)^2 / solar_mass
     
@@ -41,7 +42,7 @@ class Body:
  
 # Defining the NBody class
 class NBody:
-    def __init__(self, bodies, g_const=4.3009e-3):
+    def __init__(self, bodies, g_const=4.3009e-3, mass_units=u.M_sun, distance_units=u.pc, velocity_units=u.km/u.s, time_units=u.s):
         self.bodies = bodies # List of Body objects
         """{
             "mass": [body.mass for body in bodies],
@@ -51,12 +52,16 @@ class NBody:
         self.n = len(bodies)
         self.forces = np.zeros((self.n, 2))
         self.g_const = g_const
+        self.mass_units = mass_units
+        self.distance_units = distance_units
+        self.velocity_units = velocity_units
+        self.time_units = time_units
     
     def compute_force(self, method="barnes_hut"):
         if method == "brute_force":
             forces = brute_force(self.bodies)
         elif method == "barnes_hut":
-            forces = barnes_hut(self.bodies, g_const=self.g_const, theta=0.7)
+            forces = barnes_hut(self.bodies, g_const=self.g_const, theta=0.8)
         return forces
            
     # Remove outlying bodies if body is more than x standard deviations from the mean
@@ -108,7 +113,15 @@ class NBody:
         self.bodies["velocity"] += self.forces * dt / (np.array(self.bodies["mass"]).reshape(-1, 1) + epsilon)
         
         #self.bodies["velocity"][0] = np.array([0.0, 0.0]) # Set BH velocity to zero
-        self.bodies["position"] += self.bodies["velocity"] * dt # Update the position of the bodies
+        
+        # Copy the velocity and change units to pc/s
+        velocity_pcs = self.bodies["velocity"] * self.velocity_units.to(u.pc/u.s)
+        print("Velocity: ", velocity_pcs[0])
+        
+        
+        # Update positions
+        #self.bodies["position"] += self.bodies["velocity"] * dt # Update the position of the bodies
+        self.bodies["position"] += velocity_pcs * dt
         
         print("Black hole force: ", self.forces[0])
         print("Black hole position: ", self.bodies["position"][0])

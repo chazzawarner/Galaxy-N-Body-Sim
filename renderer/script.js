@@ -89,7 +89,7 @@ var sim_padding_scale = 0.1; // Padding around the simulation
 const c = 2.99792e5; // Speed of light in km/s
 const G = 4.3009e-3  // Gravitational constant in units of parsecs * (km/s)^2 / solar_mass
 var mass_scale; // Scale for the mass of the bodies to be rendered
-var trail = false; // Render the trail of the bodies
+var trail = true; // Render the trail of the bodies
 
 console.log("Canvas padding boundary: " + (canvas_width*sim_padding_scale) + " " + canvas_width*(1-sim_padding_scale))
 
