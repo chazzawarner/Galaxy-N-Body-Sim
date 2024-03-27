@@ -1,8 +1,7 @@
 import numpy as np
 import csv
 from nbody import NBody
-from galaxy_distribution import galaxy_generation
-from galaxy_distribution2 import Galaxy
+from galaxy_distribution import Galaxy
 import time
 from datetime import datetime
 import cProfile

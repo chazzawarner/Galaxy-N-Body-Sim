@@ -27,7 +27,7 @@ hernquist = {
 
 # Define elliptical galaxy generation function using the Hernquist distribution
 #def elliptical_galaxy_gen(num_bodies, max_radius, total_mass, a=1, G=G.value):
-def elliptical_galaxy_gen(num_bodies, a=1):
+def fraction_sampling(num_bodies, a=1):
     # Generate positions
     ## Draw random mass fractions and solve for radius
     mass_fractions = np.random.rand(num_bodies)
@@ -87,7 +87,7 @@ def main():
     total_mass = 1e9 # solar masses
     G_const = G.to_value(u.pc**3 / (u.M_sun * u.s**2))
     print(f"G: {G_const}")
-    positions, radii = elliptical_galaxy_gen(num_bodies, radius, total_mass, G=G_const, a=0.45)
+    positions, radii = fraction_sampling(num_bodies, radius, total_mass, G=G_const, a=0.45)
     
     """# Plot a histogram of the radii
     plt.hist(radii, bins=100, density=True)
