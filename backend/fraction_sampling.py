@@ -1,23 +1,17 @@
 import numpy as np
 from matplotlib import pyplot as plt
-import sympy as sp
-from latex2sympy2 import latex2sympy as l2s
 from galpy.potential import HernquistPotential
-from scipy.optimize import fsolve
-from scipy.optimize import minimize
 
-# Define equations of the Hernquist distribution
-hernquist = {
-    "density_dist": l2s(r"\frac{M}{2\pi} \frac{a}{r} \frac{1}{(r+a)^3}"), # Density distribution (rho(r))
-    "mass_frac": l2s(r"M_f=\frac{r^2}{(r+a)^2}"), # Mass fraction (M_f = M(r)/M)
-    "grav_pot": l2s(r"-\frac{GM}{r+a}"), # Gravitational potential (Phi(r))
-    "escape_vel": l2s(r"(\frac{2GM}{r+a})^{0.5}"), # Escape velocity i.e. max. velocity (v_e(r)
-    "dist_func": {
-        "function": l2s(r"\frac{M}{8\sqrt{2}\pi^3a^3{v_g}^3} \frac{1}{(1-q^2)^{5/2}} (3\arcsin{q} + q(1-q)^{1/2} (1-2q^2) (8q^4-8q^2-3) )"), # Distribution function (f(E))
-        "q": l2s(r"\sqrt{\frac{-a * T}{G * M}}"), # q = sqrt(-aE/GM)
-        "v_g": l2s(r"\sqrt{ \frac{G * M}{a} }"), # v_g = GM/a
-    }
-}
+"""
+Using Hernquist potential, we can get the density function:
+    rho(r) = M / (2 * pi) * a / r * 1 / (r + a)^3
+Integrate over the volume and divide by the total mass to get mass fraction:
+    M(r) / M = M_f = r^2 / (r + a)^2
+Solve for r in terms of M_f to get the radius:
+    r = -a * ((sqrt(M_f) + M_f) / (sqrt(M_f) - 1))
+Can sample uniform mass fractions and solve for radius to get a sample of radii.
+"""
+
 
 # Sample Hernquist potential using mass fractions
 def fraction_sampling(num_bodies, a=1, rejection_threshold=None):
