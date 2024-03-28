@@ -100,23 +100,27 @@ class Galaxy:
     def generate_positions(self, component, num_bodies_comp, comp_mass):
         print(f'Generating {num_bodies_comp} bodies for component {component["name"]}')
         positions = np.empty((0, 3))
+        
+        # Generate positions for each potential in the component
         for potential in component['potentials']:
             
+            # Determine how many bodies should be generated based on the mass of the potential
             pot_mass = potential['parameters']['mass']
             print(f"Potential mass: {pot_mass}")
             pot_bodies = round((pot_mass/comp_mass) * num_bodies_comp)
             print(f"Potential bodies: {pot_bodies}")
             
-            if potential['type'] == 'Miyamoto-Nagai': # Miyamoto-Nagai (Axisymmetric potentials)
+            # For Miyamoto-Nagai (Axisymmetric potentials)
+            if potential['type'] == 'Miyamoto-Nagai':
                 # Initialise density function from potential
                 density = lambda R, z: potential['galpy_potential'].dens(R, z, 0)
                 print(f"Num. bodies in potential {potential['type']}: {pot_bodies}")
                 
                 # Sample from the density function using MCMC
-                #samples = metropolis_hastings(density, 2, pot_bodies)
+                samples = metropolis_hastings(density, 2, pot_bodies)
                 
                 
-                # Alternative method to avoid banding of samples
+                """# Alternative method to avoid banding of samples
                 if pot_bodies < 100000:
                     num_samples = 100000
                 else:
@@ -124,7 +128,7 @@ class Galaxy:
                 samples = metropolis_hastings(density, 2, num_samples)
                 np.random.shuffle(samples)
                 #print(f"Samples: {samples}")
-                samples = samples[:pot_bodies]
+                samples = samples[:pot_bodies]"""
                 
                 
                 # Generate random angles for bodies around the z-axis
@@ -142,8 +146,8 @@ class Galaxy:
                 print(positions)
                 print(f"Generated {len(positions)} positions, num. bodies: {pot_bodies}")
                 
-                
-            else: # Hernquist
+            # Else, presume Hernquist (NFW only used for dark matter, not particle distribution)
+            else:
                 #density = lambda r: potential['galpy_potential'].dens(r + 1e-10, 0)
                 #samples = metropolis_hastings(density, 1, num_bodies)
                 print(f"Num. bodies in potential {potential['type']}: {pot_bodies}")
@@ -171,6 +175,7 @@ class Galaxy:
         
         return positions
     
+    # Get the maximum radius of the galaxy
     def get_galaxy_max_radius(self):
         max_radius = 0
         for component in self.components:
@@ -187,6 +192,7 @@ class Galaxy:
                         max_radius = potential['parameters']['a']
         return max_radius
     
+    # Generate velocities of bodies from total potential
     def generate_velocities(self, positions, total_potential):
         velocities = np.empty((0, 3))
         
@@ -209,6 +215,7 @@ class Galaxy:
         
         return velocities
     
+    # Plot the rotational velocities of the galaxy
     def plot_rotational_vel(self):
         r = np.linspace(1e-10, self.get_galaxy_max_radius(), 1000)
         
@@ -233,10 +240,6 @@ class Galaxy:
         plt.savefig(f'backend/galaxy_plots/{self.name}_rotational_velocity.png')
         plt.show()
             
-            
-                
-        
-    
     # Plot density of galaxy in a hexbin plot (as function of R and z)
     def plot_scatter_density(self):
         positions = np.empty((0, 3))
@@ -277,11 +280,6 @@ class Galaxy:
                         # Find density in a line, then move around a semi-circle to meshgrid
                         density = potential['galpy_potential'].dens(np.sqrt(R**2 + z**2 + 1e-10), 0)
                         total_mass += density
-
-                        """for i in range(np.size(R, axis=0)):
-                            for j in range(np.size(R, axis=1)):
-                                density = potential['galpy_potential'].dens(np.sqrt(R[i, j]**2 + z[i, j]**2 + 1e-10), 0)
-                                total_mass += density"""
         
         plt.figure()
         plt.hexbin(R.flatten(), z.flatten(), C=total_mass.flatten(), gridsize=100, cmap='plasma', bins='log')
@@ -358,16 +356,6 @@ class Galaxy:
     def get_t_dyn(self):
         t_dyn = tdyn(self.total_potential, self.get_galaxy_max_radius() * u.kpc)
         return t_dyn
-    
-    # Export galaxy 
-    def export_galaxy(self, filename):
-        components_copy = self.components.copy()
-        for component in components_copy:
-            for potential in component['potentials']:
-                del potential['galpy_potential']
-                
-        with open(filename, 'w') as f:
-            json.dump({'name': self.name, 'components': components_copy}, f, indent=4)
         
     # Return the galaxy bodies as a dictionary
     def get_galaxy(self):
@@ -401,17 +389,6 @@ def main():
     #galaxy.plot_component_scatter()
     galaxy.plot_rotational_vel()
     galaxy.plot_full_galaxy()
-    """print(f"Dynamical time: {galaxy.get_t_dyn()} Gyr")
-    #print(f"To return: {galaxy.get_galaxy()}")
-    bodies = galaxy.get_galaxy()
-    print(f"Total mass of bodies: {np.sum(bodies['mass'])}")
-    print(f"Predicted total mass: {galaxy.total_mass}")
-    print(f"Requested number of bodies: {galaxy.num_bodies}")
-    print(np.size(bodies['mass']))
-    print(np.size(bodies['position'], axis=0))
-    print(np.shape(bodies['position']))
-    print(np.size(bodies['velocity'])) 
-    print(np.shape(bodies['velocity']))  """ 
     
 if __name__ == "__main__":
     main()

@@ -2,17 +2,11 @@ import numpy as np
 from matplotlib import pyplot as plt
 import sympy as sp
 from latex2sympy2 import latex2sympy as l2s
-from star_types import get_random_star
-from astropy import units as u
 from galpy.potential import HernquistPotential
+from scipy.optimize import fsolve
+from scipy.optimize import minimize
 
-# Method taken from https://bjerkeli.se/onewebmedia/thesis.pdf
-
-# Define constants
-G = 6.67430e-11 * u.m**3 / (u.kg * u.s**2)  # Gravitational constant
-
-
-# Define the equations of the Hernquist distribution
+# Define equations of the Hernquist distribution
 hernquist = {
     "density_dist": l2s(r"\frac{M}{2\pi} \frac{a}{r} \frac{1}{(r+a)^3}"), # Density distribution (rho(r))
     "mass_frac": l2s(r"M_f=\frac{r^2}{(r+a)^2}"), # Mass fraction (M_f = M(r)/M)
@@ -25,131 +19,61 @@ hernquist = {
     }
 }
 
-# Define elliptical galaxy generation function using the Hernquist distribution
-#def elliptical_galaxy_gen(num_bodies, max_radius, total_mass, a=1, G=G.value):
-def fraction_sampling(num_bodies, a=1):
+# Sample Hernquist potential using mass fractions
+def fraction_sampling(num_bodies, a=1, rejection_threshold=None):
     # Generate positions
     ## Draw random mass fractions and solve for radius
-    mass_fractions = np.random.rand(num_bodies)
+    mass_fractions = np.random.uniform(0, 1, num_bodies)
     
-    M_r, r, a_symbol = sp.symbols("M_r r a")
-    mass_frac_eq = sp.Eq(hernquist["mass_frac"], M_r)
-    radius_solutions = sp.solve(mass_frac_eq, r)
-    radius_solutions_func = sp.lambdify((M_r, a_symbol), radius_solutions[0])
-    #print(radius_solutions)
+    radius_solution_func = lambda M_f, a: -a * ((np.sqrt(M_f) + M_f) / (np.sqrt(M_f) - 1))
+    radius_solution_func = np.vectorize(radius_solution_func)
     
-    radius = radius_solutions_func(mass_fractions, a)
+    radius = radius_solution_func(mass_fractions, a)
     #print(f"Radius: {radius}")
     
-    return radius
-    
-    """plt.hist(radius, bins=100, density=True)
-    plt.xscale("log")
-    plt.show()
-    
-    ## Randomly distribute on a sphere of corresponding radius
-    ### Generate random positions
-    
-    positions = np.zeros((num_bodies, 3))
-    positions[:, 0] = np.random.normal(0, 1, num_bodies)
-    positions[:, 1] = np.random.normal(0, 1, num_bodies)
-    positions[:, 2] = np.random.normal(0, 1, num_bodies)
-    
-    ### Normalise the positions
-    norms = np.linalg.norm(positions, axis=1)
-    positions = positions / norms.reshape(-1, 1)
-    
-    ### Scale the positions to the radius
-    positions = positions * radius.reshape(-1, 1)
-    
-    
-    # Generate masses
-    ## Draw random masses
-    masses = np.zeros(num_bodies)
-    for i in range(num_bodies):
-        masses[i] = get_random_star()
+    if rejection_threshold is not None:
+        # Reject samples that are above the rejection threshold
+        radius = radius[radius < rejection_threshold]
 
-    ## Scale masses to the total mass
-    masses = masses / np.sum(masses) * total_mass
-    
-    
-    # Generate velocities for each position
-    velocities = np.zeros((num_bodies, 3))
-    
-    # V^2_circ = GMr(r+a)^-2
-    
-    return positions, radius"""
+    return radius
 
 def main():
-    # Test the elliptical galaxy generation function
-    radius = 40e3 # parsecs
-    num_bodies = 1000
-    total_mass = 1e9 # solar masses
-    G_const = G.to_value(u.pc**3 / (u.M_sun * u.s**2))
-    print(f"G: {G_const}")
-    positions, radii = fraction_sampling(num_bodies, radius, total_mass, G=G_const, a=0.45)
+    num_bodies = 100000
+    a = 0.45/10
+    positions = fraction_sampling(num_bodies, a=a, rejection_threshold=10)
     
-    """# Plot a histogram of the radii
-    plt.hist(radii, bins=100, density=True)
-    plt.xscale("log")
-    plt.xlabel("Radius")
-    plt.ylabel("Density")
+    
+    radii = np.linspace(1e-5, np.max(positions), 10000)
+    true_density = HernquistPotential(a=a, normalize=1).dens(radii, 0)
+    area_under_density = np.trapz(true_density, radii)
+    print(f"Area under density: {area_under_density}")
+    normalised_density = true_density / area_under_density
+    
+    area_under_density = np.trapz(normalised_density, radii)
+    print(f"Area under normalised density: {area_under_density}")
+    
+    
+    fig, ax1 = plt.subplots()
+    
+    # Plot true density on first y-axis
+    ax1.plot(radii, normalised_density, label="True density", color='blue')
+    ax1.set_xlabel("Radius")
+    ax1.set_ylabel("True Density", color='blue')
+    ax1.tick_params(axis='y', labelcolor='blue')
+    ax1.set_yscale("log")
+    
+    # Create second y-axis for histogram
+    ax2 = ax1.twinx()
+    
+    # Plot sampled radii histogram on second y-axis
+    ax2.hist(positions, bins=100, alpha=0.5, density=True, label="Sampled radii", edgecolor='black', color='orange')
+    ax2.set_ylabel("Sampled Radii Density", color='orange')
+    ax2.tick_params(axis='y', labelcolor='orange')
+    ax2.set_yscale("log")
+    
+    plt.legend()
     plt.show()
-    """
     
-    """# Plot the positions
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(positions[:, 0], positions[:, 1], positions[:, 2])
-    
-    ## Plot a point at the origin
-    ax.scatter(0, 0, 0, color="r")
-    
-    ## Set the aspect ratio of the plot to be equal
-    ax.set_box_aspect([1,1,1])
-    
-    ## Limit the plot to the radius
-    ax.set_xlim(-radius, radius)
-    
-    plt.show()"""
-    
-    # Remove points outside the radius*1.5
-    positions = positions[np.linalg.norm(positions, axis=1) < radius*1.5]
-    
-    # Plot a 2x2 grid of views of the galaxy
-    fig, axs = plt.subplots(2, 2)
-
-    ## 3D plot
-    ax = fig.add_subplot(2, 2, 1, projection='3d')
-    ax.scatter(positions[:, 0], positions[:, 1], positions[:, 2], s=1)
-    ax.set_title("3D view")
-
-    ## Remove empty graph/axes for the 3D plot
-    fig.delaxes(axs[0, 0])
-
-    ## 2D Side view
-    ax = axs[0, 1]
-    ax.grid(True)
-    ax.scatter(positions[:, 1], positions[:, 2], s=1)
-    ax.set_title("2D Side view")
-    ax.set_aspect('equal', 'box')
-
-    ## 2D Top view
-    ax = axs[1, 0]
-    ax.grid(True)
-    ax.scatter(positions[:, 0], positions[:, 1], s=1)
-    ax.set_title("2D Top view")
-    ax.set_aspect('equal', 'box')
-    
-
-    ## 2D Front view
-    ax = axs[1, 1]
-    ax.grid(True)
-    ax.scatter(positions[:, 0], positions[:, 2], s=1)
-    ax.set_title("2D Front view")
-    ax.set_aspect('equal', 'box')
-
-    plt.show()
     
 if __name__ == '__main__':
     main()
