@@ -44,17 +44,17 @@ def main():
 
     two_galaxies = True
     if two_galaxies:
-        distance_between_galaxies = 5e3 # parsecs
+        distance_between_galaxies = 7e3 # parsecs
         approach_velocity = 110 # km/s
         
-        galaxy_1 = Galaxy('backend/galaxies/basic_galaxy.json', num_bodies=500)
+        galaxy_1 = Galaxy('backend/galaxies/paper_galaxy.json', num_bodies=500)
         galaxy_1_bodies = galaxy_1.get_galaxy()
         galaxy_1_radius = np.percentile(np.linalg.norm(galaxy_1_bodies["position"], axis=1), 95)
         galaxy_1_bodies["position"] = galaxy_1_bodies["position"][:, :2] # In units of kpc
         galaxy_1_bodies["velocity"] = galaxy_1_bodies["velocity"][:, :2] # In units of km/s
         galaxy_1_bodies["position"] *= 1e3 # Into parsecs
         
-        galaxy_2 = Galaxy('backend/galaxies/basic_galaxy.json', num_bodies=500)
+        galaxy_2 = Galaxy('backend/galaxies/paper_galaxy.json', num_bodies=500)
         galaxy_2_bodies = galaxy_2.get_galaxy()
         galaxy_2_radius = np.percentile(np.linalg.norm(galaxy_2_bodies["position"], axis=1), 95)
         galaxy_2_bodies["position"] = galaxy_2_bodies["position"][:, :2] # In units of kpc
@@ -62,11 +62,11 @@ def main():
         galaxy_2_bodies["position"] *= 1e3 # in parsecs instead of kpc
         
         total_distance = galaxy_1_radius + galaxy_2_radius + distance_between_galaxies
-        galaxy_1_bodies["position"] += np.array([total_distance/2, 1e3])
-        galaxy_2_bodies["position"] -= np.array([total_distance/2, 0])
+        galaxy_1_bodies["position"] += np.array([total_distance/2, 2e3])
+        galaxy_2_bodies["position"] -= np.array([total_distance/2, 2e3])
         
-        galaxy_1_bodies["velocity"] -= np.array([approach_velocity, 0])
-        galaxy_2_bodies["velocity"] += np.array([approach_velocity, 0])
+        galaxy_1_bodies["velocity"] -= np.array([approach_velocity/2, 0])
+        galaxy_2_bodies["velocity"] += np.array([approach_velocity/2, 0])
         
         bodies = {
             "mass": np.concatenate((galaxy_1_bodies["mass"], galaxy_2_bodies["mass"])),

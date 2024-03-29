@@ -43,7 +43,8 @@ class Galaxy:
                 positions = self.generate_positions(component, num_bodies_comp, comp_mass)
                 velocities = self.generate_velocities(positions, self.total_potential)
                 #masses = np.full(np.size(positions, axis=0), comp_mass/num_bodies_comp)
-                masses = [get_random_star() for i in range(np.size(positions, axis=0))]
+                #masses = [get_random_star() for i in range(np.size(positions, axis=0))]
+                masses = np.random.uniform(0.1, 1, np.size(positions, axis=0))
                 component.update({'bodies': {'positions': positions, 'velocities': velocities, 'masses': masses}})
                 
         # Update JSON file with galaxy data
@@ -117,10 +118,10 @@ class Galaxy:
                 print(f"Num. bodies in potential {potential['type']}: {pot_bodies}")
                 
                 # Sample from the density function using MCMC
-                samples = metropolis_hastings(density, 2, pot_bodies)
+                #samples = metropolis_hastings(density, 2, pot_bodies)
                 
                 
-                """# Alternative method to avoid banding of samples
+                # Alternative method to avoid banding of samples
                 if pot_bodies < 100000:
                     num_samples = 100000
                 else:
@@ -128,7 +129,7 @@ class Galaxy:
                 samples = metropolis_hastings(density, 2, num_samples)
                 np.random.shuffle(samples)
                 #print(f"Samples: {samples}")
-                samples = samples[:pot_bodies]"""
+                samples = samples[:pot_bodies]
                 
                 
                 # Generate random angles for bodies around the z-axis
@@ -226,7 +227,7 @@ class Galaxy:
             for potential in component['potentials'][1:]:
                 total_component_potential.__add__(potential['galpy_potential'])
             v_circ_component = total_component_potential.vcirc(r * u.kpc)
-            #print(f"v_circ for {component['name']}: {v_circ_component}")
+            print(f"v_circ for {component['name']}: {v_circ_component}")
             
             plt.plot(r, v_circ_component, label=component['name'], linestyle='--')
         
