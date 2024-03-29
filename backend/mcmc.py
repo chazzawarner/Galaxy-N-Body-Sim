@@ -4,16 +4,15 @@ from galpy.potential import MiyamotoNagaiPotential, HernquistPotential
 from tqdm import tqdm
 
 # Metropolis-Hastings MCMC algorithm for multivariate distributions i.e. Miyaoto-Nagai potential
-def metropolis_hastings(target_density, dimensions, n_samples, burn_in=10000):
+def metropolis_hastings(target_density, dimensions, n_samples, burn_in=1000):
     # Initialise the chain
     n_samples += burn_in
     x0 = np.zeros(dimensions)
     xt = x0
     samples = np.zeros((n_samples, dimensions))
-    print('Sampling using Metropolis-Hastings...')
     
     # Run the chain
-    for i in tqdm(range(n_samples)):
+    for i in range(n_samples):
         # Generate a candidate sample
         xt_candidate = xt + np.random.normal(size=dimensions)
         

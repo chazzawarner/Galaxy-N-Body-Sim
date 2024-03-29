@@ -10,7 +10,7 @@ from star_types import get_random_star
 
 # Galaxy generation function
 class Galaxy:
-    def __init__(self, json_file, num_bodies=1000000, g_const=1, pos_units=u.kpc, vel_units=u.km/u.s, mass_units=u.M_sun, density_units=u.M_sun/u.kpc**3, potential_units=u.km**2/u.s**2, time_units=u.Gyr, angle_units=u.rad):
+    def __init__(self, json_file, num_bodies=1000000, g_const=1, export=True, pos_units=u.kpc, vel_units=u.km/u.s, mass_units=u.M_sun, density_units=u.M_sun/u.kpc**3, potential_units=u.km**2/u.s**2, time_units=u.Gyr, angle_units=u.rad):
         # Load JSON file
         with open(json_file, 'r') as f:
             galaxy_json = json.load(f)
@@ -22,8 +22,10 @@ class Galaxy:
         self.g_const = g_const
         self.total_mass = self.get_total_mass()
         
-        # Initialise galaxy
         self.initialise_galaxy(pos_units, mass_units)
+
+        if export:
+            self.export_galaxy(f'backend/galaxies/{self.name}.csv')
         
     # Initialise galaxy from the provided JSON file
     def initialise_galaxy(self, pos_units, mass_units):
@@ -43,8 +45,8 @@ class Galaxy:
                 positions = self.generate_positions(component, num_bodies_comp, comp_mass)
                 velocities = self.generate_velocities(positions, self.total_potential)
                 #masses = np.full(np.size(positions, axis=0), comp_mass/num_bodies_comp)
-                #masses = [get_random_star() for i in range(np.size(positions, axis=0))]
-                masses = np.random.uniform(0.1, 1, np.size(positions, axis=0))
+                masses = [get_random_star() for i in range(np.size(positions, axis=0))]
+                #masses = np.random.uniform(0.1, 1, np.size(positions, axis=0))
                 component.update({'bodies': {'positions': positions, 'velocities': velocities, 'masses': masses}})
                 
         # Update JSON file with galaxy data
@@ -93,7 +95,7 @@ class Galaxy:
         """for potential in potentials[1:]:
             total_potential.__add__(potential)"""
         
-        print(f"Total potential: {total_potential}")
+        #print(f"Total potential: {total_potential}")
         
         return total_potential
     
@@ -107,9 +109,9 @@ class Galaxy:
             
             # Determine how many bodies should be generated based on the mass of the potential
             pot_mass = potential['parameters']['mass']
-            print(f"Potential mass: {pot_mass}")
+            #print(f"Potential mass: {pot_mass}")
             pot_bodies = round((pot_mass/comp_mass) * num_bodies_comp)
-            print(f"Potential bodies: {pot_bodies}")
+            #print(f"Potential bodies: {pot_bodies}")
             
             # For Miyamoto-Nagai (Axisymmetric potentials)
             if potential['type'] == 'Miyamoto-Nagai':
@@ -122,14 +124,11 @@ class Galaxy:
                 
                 
                 # Alternative method to avoid banding of samples
-                if pot_bodies < 100000:
-                    num_samples = 100000
-                else:
-                    num_samples = pot_bodies
-                samples = metropolis_hastings(density, 2, num_samples)
-                np.random.shuffle(samples)
-                #print(f"Samples: {samples}")
-                samples = samples[:pot_bodies]
+                print(f"Generating {pot_bodies} samples using M-H")
+                samples = np.empty((0, 2))
+                for i in tqdm(range(pot_bodies)):
+                    sample = metropolis_hastings(density, 2, 1)
+                    samples = np.vstack((samples, sample))
                 
                 
                 # Generate random angles for bodies around the z-axis
@@ -371,11 +370,13 @@ class Galaxy:
                 bodies['position'] = np.vstack((bodies['position'], component['bodies']['positions']))
                 bodies['velocity'] = np.vstack((bodies['velocity'], component['bodies']['velocities']))
                 bodies['mass'] = np.hstack((bodies['mass'], component['bodies']['masses']))
-            
+        
         return bodies
         
-        
-        
+    # Export galaxy to a CSV file
+    def export_galaxy(self, filename):
+        bodies = self.get_galaxy()
+        np.savetxt(filename, np.column_stack((bodies['mass'], bodies['position'], bodies['velocity'])), delimiter=',', header='mass,x,y,z,vx,vy,vz', comments='')
                     
     
     
@@ -383,7 +384,7 @@ class Galaxy:
     
 
 def main():
-    galaxy = Galaxy('backend/galaxies/basic_galaxy.json', num_bodies=100000)
+    galaxy = Galaxy('backend/galaxies/basic_galaxy.json', num_bodies=1000)
     print(galaxy.total_mass)
     galaxy.plot_scatter_density()
     galaxy.plot_theoretical_mass()
