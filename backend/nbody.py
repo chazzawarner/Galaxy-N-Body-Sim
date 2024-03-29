@@ -50,7 +50,7 @@ class NBody:
             "velocity": [body.velocity for body in bodies]
             } #bodies """
         self.n = len(bodies)
-        self.forces = np.zeros((self.n, 2))
+        self.forces = np.zeros((self.n, 3))
         self.g_const = g_const
         self.mass_units = mass_units
         self.distance_units = distance_units
@@ -74,16 +74,8 @@ class NBody:
         bodies_to_remove = []
         
         for i in range(len(self.bodies["position"])):
-            # SORT THIS OUT
             if np.linalg.norm(self.bodies["position"][i] - mean_position) > std_devs_lim * std_dev_distance:
                 bodies_to_remove.append(i)
-                
-        """for i in bodies_to_remove:
-            self.bodies["position"] = np.delete(self.bodies["position"], i, axis=0)
-            self.bodies["velocity"] = np.delete(self.bodies["velocity"], i, axis=0)
-            self.bodies["mass"] = np.delete(self.bodies["mass"], i)
-            self.n -= 1
-            print(f"Body {i} removed as outlier")"""
 
         if len(bodies_to_remove) > 0:
             self.bodies["position"] = np.delete(self.bodies["position"], bodies_to_remove, axis=0)

@@ -16,40 +16,45 @@ class Node:
     def __init__(self, centre, size):
         self.centre = centre
         self.size = size
-        self.centre_of_mass = 0
+        self.centre_of_mass = np.array([0.0, 0.0, 0.0])
         self.mass = 0
         self.children = None
         
     def create_children(self):
         self.children = {
-            "NW": Node(self.centre + np.array([-self.size/4, self.size/4]), self.size/2),
-            "NE": Node(self.centre + np.array([self.size/4, self.size/4]), self.size/2),
-            "SW": Node(self.centre + np.array([-self.size/4, -self.size/4]), self.size/2),
-            "SE": Node(self.centre + np.array([self.size/4, -self.size/4]), self.size/2)
+            "NEU": Node(self.centre + np.array([self.size/4, self.size/4, self.size/4]), self.size/2),
+            "NWU": Node(self.centre + np.array([-self.size/4, self.size/4, self.size/4]), self.size/2),
+            "SEU": Node(self.centre + np.array([self.size/4, -self.size/4, self.size/4]), self.size/2),
+            "SWU": Node(self.centre + np.array([-self.size/4, -self.size/4, self.size/4]), self.size/2),
+            "NED": Node(self.centre + np.array([self.size/4, self.size/4, -self.size/4]), self.size/2),
+            "NWD": Node(self.centre + np.array([-self.size/4, self.size/4, -self.size/4]), self.size/2),
+            "SED": Node(self.centre + np.array([self.size/4, -self.size/4, -self.size/4]), self.size/2),
+            "SWD": Node(self.centre + np.array([-self.size/4, -self.size/4, -self.size/4]), self.size/2)
         }
     
-    def in_quadrant(self, position):
+    def in_octant(self, position):
         return (self.centre[0] - self.size/2 <= position[0] < self.centre[0] + self.size/2 and 
-                self.centre[1] - self.size/2 <= position[1] < self.centre[1] + self.size/2)
-    
+                self.centre[1] - self.size/2 <= position[1] < self.centre[1] + self.size/2 and
+                self.centre[2] - self.size/2 <= position[2] < self.centre[2] + self.size/2)
+
     def insert(self, body):
-        epsilon = 1e-3  # Adjust this value as needed
-        body["position"] += epsilon * (np.random.rand(2) - 0.5)  # Add a small random offset to the position to avoid divide by zero errors
+        epsilon = 1e-3
+        body["position"] += epsilon * (np.random.rand(3) - 0.5)  # Add a small random offset to the position to avoid divide by zero errors
         
         # If the node is empty, insert the body
         if self.children is None and self.mass == 0:
             self.centre_of_mass = body["position"]
             self.mass = body["mass"]
         
-        # If internal node, update the centre of mass and mass, recursively insert the body into the appropriate quadrant
+        # If internal node, update the centre of mass and mass, recursively insert the body into the appropriate octant
         elif self.children is not None:
             # Update the centre of mass and mass
             self.mass += body["mass"]
             self.centre_of_mass = (self.centre_of_mass * self.mass + body["position"] * body["mass"]) / (self.mass + body["mass"])
             
-            # Insert the body into the appropriate quadrant
+            # Insert the body into the appropriate octant
             for child in self.children:
-                if self.children[child].in_quadrant(body["position"]):
+                if self.children[child].in_octant(body["position"]):
                     self.children[child].insert(body)
         
         # If external node, subdivide the region further by creating four children, then recursively insert both the body and the body already there, then update the centre of mass and mass
@@ -61,38 +66,37 @@ class Node:
             }
             
             for child in self.children:
-                if self.children[child].in_quadrant(old_body["position"]):
+                if self.children[child].in_octant(old_body["position"]):
                     self.children[child].insert(old_body)
-                if self.children[child].in_quadrant(body["position"]):
+                if self.children[child].in_octant(body["position"]):
                     self.children[child].insert(body)
             
             
         else:
             print("Error: Node is neither empty, internal, nor external")
         
-# Define quadtree function
-def create_quadtree(bodies):
-    pos_x_max = max(body[0] for body in bodies["position"])
-    pos_x_min = min(body[0] for body in bodies["position"])
-    pos_y_max = max(body[1] for body in bodies["position"])
-    pos_y_min = min(body[1] for body in bodies["position"])
+# Define octree function
+def create_octree(bodies):
     
-    bounding_box = max(pos_x_max - pos_x_min, pos_y_max - pos_y_min)
-    centre = np.array([pos_x_min + bounding_box/2, pos_y_min + bounding_box/2])
+    pos_max = np.max(bodies["position"], axis=0)
+    pos_min = np.min(bodies["position"], axis=0)
     
-    quadtree = Node(centre, bounding_box)
+    bounding_box = np.max(pos_max - pos_min)
+    centre = pos_min + bounding_box/2
+    
+    octree = Node(centre, bounding_box)
     for i in range(len(bodies["mass"])):
         body = {
             "mass": bodies["mass"][i],
             "position": bodies["position"][i]
         }
         
-        quadtree.insert(body)
+        octree.insert(body)
     
-    return quadtree
+    return octree
 
 def compute_force(node, body, theta, smoothing_length, g_const):
-    force = np.array([0.0, 0.0])
+    force = np.array([0.0, 0.0, 0.0])
     epsilon = 1e-5
     
     # Making sure the body is not interacting with itself
@@ -130,9 +134,9 @@ def compute_all_forces(bodies, theta=0.5, g_const=4.3009e-3):
     
     
     time_start = time.time()
-    quadtree = create_quadtree(bodies)
+    octree = create_octree(bodies)
     time_end = time.time()
-    print(f"Time taken to create quadtree: {time_end - time_start} seconds")
+    print(f"Time taken to create octree: {time_end - time_start} seconds")
     
     forces = np.zeros((len(bodies["mass"]), 2))
     
@@ -154,7 +158,7 @@ def compute_all_forces(bodies, theta=0.5, g_const=4.3009e-3):
     # Create a multiprocessing Pool
     with Pool() as p:
         # Create a list of arguments for each body
-        args = [(quadtree, {"mass": bodies["mass"][i], "position": bodies["position"][i]}, theta, smoothing_length, g_const) for i in range(len(bodies["mass"]))]
+        args = [(octree, {"mass": bodies["mass"][i], "position": bodies["position"][i]}, theta, smoothing_length, g_const) for i in range(len(bodies["mass"]))]
         # Use the Pool's map function to compute the forces in parallel
         forces = list(tqdm(p.imap(compute_force_helper, args), total=len(args)))
         

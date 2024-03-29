@@ -42,7 +42,7 @@ def main():
     
     print(f"Time step: {timestep} s")
 
-    two_galaxies = True
+    two_galaxies = False
     if two_galaxies:
         distance_between_galaxies = 7e3 # parsecs
         approach_velocity = 110 # km/s
@@ -50,15 +50,11 @@ def main():
         galaxy_1 = Galaxy('backend/galaxies/paper_galaxy.json', num_bodies=500)
         galaxy_1_bodies = galaxy_1.get_galaxy()
         galaxy_1_radius = np.percentile(np.linalg.norm(galaxy_1_bodies["position"], axis=1), 95)
-        galaxy_1_bodies["position"] = galaxy_1_bodies["position"][:, :2] # In units of kpc
-        galaxy_1_bodies["velocity"] = galaxy_1_bodies["velocity"][:, :2] # In units of km/s
         galaxy_1_bodies["position"] *= 1e3 # Into parsecs
         
         galaxy_2 = Galaxy('backend/galaxies/paper_galaxy.json', num_bodies=500)
         galaxy_2_bodies = galaxy_2.get_galaxy()
         galaxy_2_radius = np.percentile(np.linalg.norm(galaxy_2_bodies["position"], axis=1), 95)
-        galaxy_2_bodies["position"] = galaxy_2_bodies["position"][:, :2] # In units of kpc
-        galaxy_2_bodies["velocity"] = galaxy_2_bodies["velocity"][:, :2] # In units of km/s
         galaxy_2_bodies["position"] *= 1e3 # in parsecs instead of kpc
         
         total_distance = galaxy_1_radius + galaxy_2_radius + distance_between_galaxies
@@ -78,10 +74,6 @@ def main():
     else:
         galaxy = Galaxy('backend/galaxies/basic_galaxy.json', num_bodies=1000)
         bodies = galaxy.get_galaxy()
-        
-        # Only consider the x and y coordinates
-        bodies["position"] = bodies["position"][:, :2] # In units of kpc
-        bodies["velocity"] = bodies["velocity"][:, :2] # In units of km/s
         
         # Convert postions to parsecs
         bodies["position"] = bodies["position"] * 1e3
@@ -105,21 +97,11 @@ def main():
     #with open(filename, 'w', newline='') as f: # Sort out PyScript first
     with open("data/output.csv", 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['time', 'mass', 'pos_x', 'pos_y', 'vel_x', 'vel_y'])  # Write the header
-
-        #writer.writerow([0, bodies[0].mass, bodies[0].position[0], bodies[0].position[1]])  # Write the initial state
-        """for body in nbody.bodies:
-                writer.writerow([0, body.mass, body.position[0], body.position[1]])
-        
-        for i in range(timesteps-1):
-            print(f'Step {i+1}/{timesteps}')
-            nbody.update(1)  # Update the bodies
-            for body in nbody.bodies:
-                writer.writerow([i+1, body.mass, body.position[0], body.position[1]])  # Write the time, mass, and position"""
-                
+        writer.writerow(['time', 'mass', 'pos_x', 'pos_y', 'pos_z', 'vel_x', 'vel_y', 'vel_z'])  # Write the header
+    
         # Write the initial state
         for i in range(len(nbody.bodies["mass"])):
-            writer.writerow([0, nbody.bodies["mass"][i], nbody.bodies["position"][i][0], nbody.bodies["position"][i][1], nbody.bodies["velocity"][i][0], nbody.bodies["velocity"][i][1]])
+            writer.writerow([0, nbody.bodies["mass"][i], nbody.bodies["position"][i][0], nbody.bodies["position"][i][1], nbody.bodies["position"][i][2], nbody.bodies["velocity"][i][0], nbody.bodies["velocity"][i][1], nbody.bodies["velocity"][i][2]])
             
         # Write the subsequent states, updating the bodies at each step
         for i in range(timesteps-1):
@@ -127,7 +109,7 @@ def main():
             nbody.update(timestep, remove_outliers=False)
             
             for j in range(len(nbody.bodies["mass"])):  # Write the time, mass, and position
-                writer.writerow([i+1, nbody.bodies["mass"][j], nbody.bodies["position"][j][0], nbody.bodies["position"][j][1], nbody.bodies["velocity"][j][0], nbody.bodies["velocity"][j][1]])
+                writer.writerow([i+1, nbody.bodies["mass"][j], nbody.bodies["position"][j][0], nbody.bodies["position"][j][1], nbody.bodies["position"][j][2], nbody.bodies["velocity"][j][0], nbody.bodies["velocity"][j][1], nbody.bodies["velocity"][j][2]])
         
     print("Simulation complete")
     
