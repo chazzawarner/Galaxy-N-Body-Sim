@@ -108,7 +108,7 @@ class NBody:
         
         # Copy the velocity and change units to pc/s
         velocity_pcs = self.bodies["velocity"] * self.velocity_units.to(u.pc/u.s)
-        print("Velocity: ", velocity_pcs[0])
+        #print("Velocity: ", velocity_pcs[0])
         
         
         # Update positions
