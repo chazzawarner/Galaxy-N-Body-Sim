@@ -1,0 +1,5 @@
+numpy==1.26.0
+astropy==6.0.0
+matplotlib==3.8.2
+tqdm==4.66.2
+galpy==1.9.2
