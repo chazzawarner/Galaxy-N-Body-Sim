@@ -10,34 +10,11 @@ import astropy.units as u
 from astropy.constants import G
 
 timesteps = 100 
-timestep = (1 * u.Gyr).to(u.s).value / 1e5
+timestep = (1 * u.Gyr).to(u.s).value / 1e5 
 #print(f"Time step: {timestep}")
 
 def main():
-    # Define 100 bodies with random mass, position, and velocity
-    print("Creating bodies...")
-    """bodies = []
-    for _ in range(num_bodies):
-        mass = get_random_star()
-        centre_vec = np.array([bounding_box/2, bounding_box/2])
-        direction = np.random.uniform(-1, 1, size=(2,))
-        direction /= np.linalg.norm(direction)
-        distance = np.random.uniform(0, 20e3) + 2500 #(np.random.exponential(scale=1) * bounding_box / 2) + 250 #0.1 * bounding_box
-        position = centre_vec + direction * distance
-        centre_to_pos = position - centre_vec
-        c_to_p_perp = np.array([-centre_to_pos[1], centre_to_pos[0]])
-        c_to_p_perp_norm = c_to_p_perp / np.linalg.norm(c_to_p_perp)
-        distance_to_centre = np.linalg.norm(centre_to_pos)
-        speed = np.sqrt( (g_const * bh_mass) / distance_to_centre ) #(1 - distance_to_centre / (bounding_box / 2)) * (np.linalg.norm(centre_to_pos) / (0.5 * bounding_box))
-        print(f"Speed: {speed}")
-        velocity = c_to_p_perp_norm * speed
-        bodies.append(Body(mass, position, velocity))
-    #bodies[0].mass = bh_mass  # Set the mass of the first body to be much larger than the others
-    #bodies[0].position = np.array([bounding_box/2, bounding_box/2])  # Set the position of the first body to the origin
-    #bodies[0].velocity = np.array([0.0, 0.0])  # Set the velocity of the first body to zero"""
-    #bodies = galaxy_generation(num_bodies, bounding_box)
-    
-    print(f"Time step: {timestep} s")
+    print("Initialising simulation...")
 
     two_galaxies = True
     if two_galaxies:
@@ -46,7 +23,7 @@ def main():
         
         # Calculate inital position and velocities
         distance_between_galaxies = 15e3 # parsecs
-        approach_speed = 1010 # km/s
+        approach_speed = 100 # km/s
         
         # Set positions
         galaxy_positions = [np.array([distance_between_galaxies/2, 1e3, 0]), np.array([-distance_between_galaxies/2, -1e3, 0])]
@@ -61,7 +38,7 @@ def main():
         galaxy_velocities = [galaxy_vec_12 * approach_speed/2, galaxy_vec_21 * approach_speed/2]
         
         # Get bodies
-        bodies = init_merger(galaxy_jsons, galaxy_positions, galaxy_velocities, total_num_bodies=1000, check_csv=False)
+        bodies = init_merger(galaxy_jsons, galaxy_positions, galaxy_velocities, total_num_bodies=2000, check_csv=False)
         
         
     else:

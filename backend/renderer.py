@@ -1,6 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.animation as animation
+from star_types import star_types
 
 # Render merger data to an animation
 def render_merger(filename, output_filename="output.gif", trails=False):
@@ -33,6 +34,9 @@ def render_merger(filename, output_filename="output.gif", trails=False):
     max_pos_side = max(max_x, max_z)
     max_pos_front = max(max_y, max_z)
     
+    fig.set_size_inches(8, 8)
+    fig.set_tight_layout(True)
+    
     # Plot a straight line between current and previous position for each body
     def plot_trails(plot, components, timestep):
         if timestep != 0:
@@ -41,8 +45,10 @@ def render_merger(filename, output_filename="output.gif", trails=False):
                 pos = timesteps[timestep]["positions"][i]
                 
                 axs[plot[0], plot[1]].plot([prev_pos[components[0]], pos[components[0]]], [prev_pos[components[1]], pos[components[1]]], 'k-', linewidth=0.5, zorder=1, alpha=0.2)
-        
     
+    max_mass = 16 # solar masses, taken from star_types.py, minimum mass of an O-type star
+    min_mass = 0.4
+
     # Animate the data
     def animate(timestep):
         masses = timesteps[timestep]["masses"]
@@ -57,7 +63,7 @@ def render_merger(filename, output_filename="output.gif", trails=False):
         if trails:
             plot_trails([0, 0], [0, 1], timestep)
         
-        axs[0,0].scatter(positions[:, 0], positions[:, 1], s=masses)
+        axs[0,0].scatter(positions[:, 0], positions[:, 1], s=masses, c='blue', zorder=2, alpha=0.5)
         
         axs[0,0].set_title("Top-down view (x-y)", fontsize=12)
         
@@ -70,7 +76,7 @@ def render_merger(filename, output_filename="output.gif", trails=False):
         if trails:
             plot_trails([0, 1], [0, 2], timestep)
         
-        axs[0,1].scatter(positions[:, 0], positions[:, 2], s=masses)
+        axs[0,1].scatter(positions[:, 0], positions[:, 2], s=masses, c='blue', zorder=2, alpha=0.5)
         axs[0,1].set_title("Side view (x-z)", fontsize=12)
         
         # Front view (y-z)
@@ -82,7 +88,7 @@ def render_merger(filename, output_filename="output.gif", trails=False):
         if trails:
             plot_trails([1, 0], [1, 2], timestep)
         
-        axs[1,0].scatter(positions[:, 1], positions[:, 2], s=masses)
+        axs[1,0].scatter(positions[:, 1], positions[:, 2], s=masses, c='blue', zorder=2, alpha=0.5)
         axs[1,0].set_title("Front view (y-z)", fontsize=12)
         
         # Put the timestep in the corner
