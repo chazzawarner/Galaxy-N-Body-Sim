@@ -4,7 +4,7 @@ import matplotlib.animation as animation
 from star_types import star_types
 
 # Render merger data to an animation
-def render_merger(filename, output_filename="output.gif", trails=False):
+def render_merger(filename, output_filename="output.gif", trails=False, colours=["blue", "red"], depth_alpha=True):
     # Load the data, removing the header
     data = np.loadtxt(filename, delimiter=',', skiprows=1)
     
@@ -18,11 +18,13 @@ def render_merger(filename, output_filename="output.gif", trails=False):
     for timestep in range(num_timesteps):
         timestep_data = data[data[:, 0] == timestep]
         masses = timestep_data[:, 1]
-        positions = timestep_data[:, 2:]
+        positions = timestep_data[:, 2:5]
+        galaxy = timestep_data[:, 8]
         
         timesteps[timestep] = {
             "masses": masses,
-            "positions": positions
+            "positions": positions,
+            "galaxy": galaxy
         }
     
     # Set up the figure and axis - 2x2 grid
@@ -53,6 +55,7 @@ def render_merger(filename, output_filename="output.gif", trails=False):
     def animate(timestep):
         masses = timesteps[timestep]["masses"]
         positions = timesteps[timestep]["positions"]
+        galaxy = timesteps[timestep]["galaxy"]
         
         # Top-down view (x-y)
         axs[0,0].clear()
@@ -62,8 +65,13 @@ def render_merger(filename, output_filename="output.gif", trails=False):
         
         if trails:
             plot_trails([0, 0], [0, 1], timestep)
+            
+        if depth_alpha:
+            max_z = np.max(np.abs(positions[:, 2]))
+            min_z = np.min(np.abs(positions[:, 2]))
+            alpha = np.interp(positions[:, 2], [min_z, max_z], [0.1, 0.8])
         
-        axs[0,0].scatter(positions[:, 0], positions[:, 1], s=masses, c='blue', zorder=2, alpha=0.5)
+        axs[0,0].scatter(positions[:, 0], positions[:, 1], s=masses, c=[colours[int(g)] for g in galaxy], zorder=2, alpha=alpha)
         
         axs[0,0].set_title("Top-down view (x-y)", fontsize=12)
         
@@ -75,8 +83,13 @@ def render_merger(filename, output_filename="output.gif", trails=False):
         
         if trails:
             plot_trails([0, 1], [0, 2], timestep)
+            
+        if depth_alpha:
+            max_y = np.max(np.abs(positions[:, 1]))
+            min_y = np.min(np.abs(positions[:, 1]))
+            alpha = np.interp(positions[:, 1], [min_y, max_y], [0.1, 0.8])
         
-        axs[0,1].scatter(positions[:, 0], positions[:, 2], s=masses, c='blue', zorder=2, alpha=0.5)
+        axs[0,1].scatter(positions[:, 0], positions[:, 2], s=masses, c=[colours[int(g)] for g in galaxy], zorder=2, alpha=alpha)
         axs[0,1].set_title("Side view (x-z)", fontsize=12)
         
         # Front view (y-z)
@@ -87,8 +100,13 @@ def render_merger(filename, output_filename="output.gif", trails=False):
         
         if trails:
             plot_trails([1, 0], [1, 2], timestep)
+            
+        if depth_alpha:
+            max_x = np.max(np.abs(positions[:, 0]))
+            min_x = np.min(np.abs(positions[:, 0]))
+            alpha = np.interp(positions[:, 0], [min_x, max_x], [0.1, 0.8])
         
-        axs[1,0].scatter(positions[:, 1], positions[:, 2], s=masses, c='blue', zorder=2, alpha=0.5)
+        axs[1,0].scatter(positions[:, 1], positions[:, 2], s=masses, c=[colours[int(g)] for g in galaxy], zorder=2, alpha=alpha)
         axs[1,0].set_title("Front view (y-z)", fontsize=12)
         
         # Put the timestep in the corner

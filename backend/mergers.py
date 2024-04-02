@@ -55,8 +55,9 @@ def init_merger(galaxy_jsons, galaxy_positions, galaxy_velocities, total_num_bod
                 galaxy_json = json.load(f)
                 galaxy_mass = 0
                 for component in galaxy_json["components"]:
-                    for potential in component["potentials"]:
-                        galaxy_mass += potential["parameters"]["mass"]
+                    if not component["dark matter"]:
+                        for potential in component["potentials"]:
+                            galaxy_mass += potential["parameters"]["mass"]
                 galaxies_masses.append(galaxy_mass)
         
         for i in range(len(galaxy_jsons)):
@@ -81,7 +82,8 @@ def init_merger(galaxy_jsons, galaxy_positions, galaxy_velocities, total_num_bod
     bodies = {
         "mass": np.concatenate([galaxy["mass"] for galaxy in galaxies_bodies]),
         "position": np.concatenate([galaxy["position"] for galaxy in galaxies_bodies]),
-        "velocity": np.concatenate([galaxy["velocity"] for galaxy in galaxies_bodies])
+        "velocity": np.concatenate([galaxy["velocity"] for galaxy in galaxies_bodies]),
+        "galaxy": np.concatenate([np.full(len(galaxy["mass"]), i) for i, galaxy in enumerate(galaxies_bodies)]) # Assign each body to its galaxy
     }
     
     return bodies

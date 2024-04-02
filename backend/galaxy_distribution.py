@@ -48,9 +48,6 @@ class Galaxy:
                 masses = [get_random_star() for i in range(np.size(positions, axis=0))]
                 #masses = np.random.uniform(0.1, 1, np.size(positions, axis=0))
                 component.update({'bodies': {'positions': positions, 'velocities': velocities, 'masses': masses}})
-                
-        # Update JSON file with galaxy data
-        #self.export_galaxy(f'backend/galaxies/{self.name}.json')
     
     # Set galpy potentials for each component
     def set_galpy_potentials(self, pos_units, mass_units):
@@ -64,8 +61,21 @@ class Galaxy:
                     parameters = potential['parameters']
                     potential['galpy_potential'] = HernquistPotential(amp=parameters['mass']*mass_units, a=parameters['a']*pos_units)
                 elif potential['type'] == 'NFW':
-                    potential['parameters'].update({'normalise': 1})
-                    potential['galpy_potential'] = NFWPotential(amp=parameters['mass']*mass_units, a=parameters['a']*pos_units)
+                    parameters = potential['parameters']
+                    if 'mass' in parameters:
+                        potential['galpy_potential'] = NFWPotential(amp=parameters['mass']*mass_units, a=parameters['a']*pos_units)
+                    else: # Presuming it must have M_vir and c
+                        #print(f"Setting NFW potential with M_vir: {parameters['M_vir']} and c: {parameters['c']}")
+                        mvir = parameters['M_vir']# * u.M_sun
+                        conc = parameters['c']
+                        overdens = 200
+                        H = 70 * u.km/u.s/u.Mpc
+                        omega_m = 0.3
+                        wrtcrit = True
+                        potential['galpy_potential'] = NFWPotential(mvir=mvir, conc=conc, wrtcrit=wrtcrit)
+                        #print("Potential set")
+                        #print(potential['galpy_potential'].rvir())
+                        #print("Found vcirc")
         
                     
     # Get total mass of galaxy from all components    
@@ -143,7 +153,7 @@ class Galaxy:
                 
                 # Add positions to component body positions array
                 positions = np.vstack((positions, np.array([x, y, z]).T))
-                print(positions)
+                #print(positions)
                 print(f"Generated {len(positions)} positions, num. bodies: {pot_bodies}")
                 
             # Else, presume Hernquist (NFW only used for dark matter, not particle distribution)
@@ -187,6 +197,8 @@ class Galaxy:
                         max_radius = a
                     if b > max_radius:
                         max_radius = b
+                elif potential['type'] == 'NFW':
+                    pass
                 else:
                     if potential['parameters']['a'] > max_radius:
                         max_radius = potential['parameters']['a']
@@ -216,8 +228,13 @@ class Galaxy:
         return velocities
     
     # Plot the rotational velocities of the galaxy
-    def plot_rotational_vel(self):
-        r = np.linspace(1e-10, self.get_galaxy_max_radius(), 1000)
+    def plot_rotational_vel(self, r_max=None, log=False):
+        r_min = 1e-10
+        if r_max is None:
+            r_max = self.get_galaxy_max_radius()
+        if log:
+            r_min = 1e-1
+        r = np.linspace(r_min, r_max, 1000)
         
         plt.figure()
         
@@ -237,6 +254,8 @@ class Galaxy:
         plt.title(f'{self.name} Rotational Velocity')
         plt.xlabel('r (kpc)')
         plt.ylabel('v_circ (km/s)')
+        if log:
+            plt.xscale('log')
         plt.savefig(f'backend/galaxy_plots/{self.name}_rotational_velocity.png')
         plt.show()
             
@@ -384,12 +403,12 @@ class Galaxy:
     
 
 def main():
-    galaxy = Galaxy('backend/galaxies/basic_galaxy.json', num_bodies=1000)
+    galaxy = Galaxy('backend/galaxies/andromeda.json', num_bodies=100)
     print(galaxy.total_mass)
     galaxy.plot_scatter_density()
     galaxy.plot_theoretical_mass()
     #galaxy.plot_component_scatter()
-    galaxy.plot_rotational_vel()
+    galaxy.plot_rotational_vel(r_max=100)
     galaxy.plot_full_galaxy()
     
 if __name__ == "__main__":

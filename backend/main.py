@@ -19,7 +19,7 @@ def main():
     two_galaxies = True
     if two_galaxies:
         # Define the galaxy JSONs
-        galaxy_jsons = ['backend/galaxies/basic_galaxy.json', 'backend/galaxies/basic_galaxy.json']
+        galaxy_jsons = ['backend/galaxies/andromeda.json', 'backend/galaxies/milkyway.json']
         
         # Calculate inital position and velocities
         distance_between_galaxies = 15e3 # parsecs
@@ -49,7 +49,8 @@ def main():
         bodies = {
             "mass": bodies_csv[:, 1],
             "position": bodies_csv[:, 2:5],
-            "velocity": bodies_csv[:, 5:]
+            "velocity": bodies_csv[:, 5:],
+            "galaxy": np.full(len(bodies_csv), 0) # All from the same galaxy
         }
         
         # Convert postions to parsecs
@@ -68,11 +69,11 @@ def main():
 
     with open("data/output.csv", 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['time', 'mass', 'pos_x', 'pos_y', 'pos_z', 'vel_x', 'vel_y', 'vel_z'])  # Write the header
+        writer.writerow(['time', 'mass', 'pos_x', 'pos_y', 'pos_z', 'vel_x', 'vel_y', 'vel_z', 'galaxy'])
     
         # Write the initial state
         for i in range(len(nbody.bodies["mass"])):
-            writer.writerow([0, nbody.bodies["mass"][i], nbody.bodies["position"][i][0], nbody.bodies["position"][i][1], nbody.bodies["position"][i][2], nbody.bodies["velocity"][i][0], nbody.bodies["velocity"][i][1], nbody.bodies["velocity"][i][2]])
+            writer.writerow([0, nbody.bodies["mass"][i], nbody.bodies["position"][i][0], nbody.bodies["position"][i][1], nbody.bodies["position"][i][2], nbody.bodies["velocity"][i][0], nbody.bodies["velocity"][i][1], nbody.bodies["velocity"][i][2], nbody.bodies["galaxy"][i]])
             
         # Write the subsequent states, updating the bodies at each step
         for i in range(timesteps-1):
@@ -80,7 +81,7 @@ def main():
             nbody.update(timestep, remove_outliers=False)
             
             for j in range(len(nbody.bodies["mass"])):  # Write the time, mass, and position
-                writer.writerow([i+1, nbody.bodies["mass"][j], nbody.bodies["position"][j][0], nbody.bodies["position"][j][1], nbody.bodies["position"][j][2], nbody.bodies["velocity"][j][0], nbody.bodies["velocity"][j][1], nbody.bodies["velocity"][j][2]])
+                writer.writerow([i+1, nbody.bodies["mass"][j], nbody.bodies["position"][j][0], nbody.bodies["position"][j][1], nbody.bodies["position"][j][2], nbody.bodies["velocity"][j][0], nbody.bodies["velocity"][j][1], nbody.bodies["velocity"][j][2], nbody.bodies["galaxy"][j]])
         
     print("Simulation complete")
     
