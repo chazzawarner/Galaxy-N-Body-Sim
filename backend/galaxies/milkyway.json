@@ -1,0 +1,46 @@
+{
+    "name": "Milky-Way",
+    "components": [
+        {
+            "name": "Disc",
+            "dark matter": false,
+            "potentials": [
+                {
+                    "type": "Miyamoto-Nagai",
+                    "parameters": {
+                        "mass": 6.58e10,
+                        "a": 4.85,
+                        "b": 0.305
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Bulge",
+            "dark matter": false,
+            "potentials": [
+                
+                {
+                    "type": "Hernquist",
+                    "parameters": {
+                        "mass": 4.07e9,
+                        "a": 0.184
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Dark Matter Halo",
+            "dark matter": true,
+            "potentials": [
+                {
+                    "type": "NFW",
+                    "parameters": {
+                        "mass": 1.62e12,
+                        "a": 200
+                    }
+                }
+            ]
+        }
+    ]
+}

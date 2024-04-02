@@ -1,0 +1,46 @@
+{
+    "name": "Andromeda",
+    "components": [
+        {
+            "name": "Disc",
+            "dark matter": false,
+            "potentials": [
+                {
+                    "type": "Miyamoto-Nagai",
+                    "parameters": {
+                        "mass": 7.244e10,
+                        "a": 5.77,
+                        "b": 0.55
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Bulge",
+            "dark matter": false,
+            "potentials": [
+                
+                {
+                    "type": "Hernquist",
+                    "parameters": {
+                        "mass": 3.715e10,
+                        "a": 0.84
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Dark Matter Halo",
+            "dark matter": true,
+            "potentials": [
+                {
+                    "type": "NFW",
+                    "parameters": {
+                        "M_vir": 1.14,
+                        "c": 8.71
+                    }
+                }
+            ]
+        }
+    ]
+}
