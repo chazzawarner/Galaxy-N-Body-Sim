@@ -1,5 +1,5 @@
 {
-    "name": "Jason the Galaxy",
+    "name": "Basic galaxy",
     "components": [
         {
             "name": "Stellar Disk",
@@ -24,7 +24,7 @@
                     "type": "Hernquist",
                     "parameters": {
                         "mass": 1.6e10,
-                        "a": 0.7
+                        "a": 0.15
                     }
                 }
             ]
@@ -37,7 +37,7 @@
                     "type": "NFW",
                     "parameters": {
                         "mass": 1e12,
-                        "a": 8.5
+                        "a": 30
                     }
                 }
             ]

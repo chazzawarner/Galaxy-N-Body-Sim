@@ -9,26 +9,30 @@ import cProfile
 import astropy.units as u
 from astropy.constants import G
 
-timesteps = 100 
-timestep = (1 * u.Gyr).to(u.s).value / 1e5 
+timesteps = 100
+#timestep = (1 * u.Gyr).to(u.s).value / 1e5
+timestep = (15 * u.Gyr).to(u.s).value / timesteps
 #print(f"Time step: {timestep}")
 
 def main():
     print("Initialising simulation...")
 
-    two_galaxies = True
+    two_galaxies = False
     if two_galaxies:
         # Define the galaxy JSONs
         galaxy_jsons = ['backend/galaxies/andromeda.json', 'backend/galaxies/milkyway.json']
         
         # Calculate inital position and velocities
-        distance_between_galaxies = 15e3 # parsecs
-        approach_speed = 100 # km/s
+        distance_between_galaxies = (1.5 * u.Mpc).to(u.pc).value # parsecs
+        approach_speed = 120 # km/s
         
-        # Set positions
-        galaxy_positions = [np.array([distance_between_galaxies/2, 1e3, 0]), np.array([-distance_between_galaxies/2, -1e3, 0])]
+        # Set positions for each galaxy
+        galaxy_positions = [
+            np.array([distance_between_galaxies/2, 1e3, 0]),
+            np.array([-distance_between_galaxies/2, -1e3, 0])
+            ]
         
-        # Calculate unit vectors for velocities
+        # Calculate unit vectors for velocities (direction between galaxies)
         galaxy_vec_12 = galaxy_positions[1] - galaxy_positions[0]
         galaxy_vec_12 = galaxy_vec_12 / np.linalg.norm(galaxy_vec_12)
         galaxy_vec_21 = galaxy_positions[0] - galaxy_positions[1]
@@ -40,18 +44,20 @@ def main():
         # Get bodies
         bodies = init_merger(galaxy_jsons, galaxy_positions, galaxy_velocities, total_num_bodies=2000, check_csv=False)
         
-        
+    # Load a single galaxy
     else:
-        """galaxy = Galaxy('backend/galaxies/basic_galaxy.json', num_bodies=1000)
-        bodies = galaxy.get_galaxy()"""
+        galaxy = Galaxy('backend/galaxies/milkyway.json', num_bodies=1000)
+        bodies = galaxy.get_galaxy()
+        bodies.update({"galaxy": np.full(len(bodies["mass"]), 0)})
         
-        bodies_csv = np.loadtxt('data/Jason the Galaxy.csv', delimiter=',', skiprows=1)
+        # Useful if you want to load a galaxy from a CSV file instead of generating it
+        """bodies_csv = np.loadtxt('data/Jason the Galaxy.csv', delimiter=',', skiprows=1)
         bodies = {
             "mass": bodies_csv[:, 1],
             "position": bodies_csv[:, 2:5],
             "velocity": bodies_csv[:, 5:],
             "galaxy": np.full(len(bodies_csv), 0) # All from the same galaxy
-        }
+        }"""
         
         # Convert postions to parsecs
         bodies["position"] = bodies["position"] * 1e3

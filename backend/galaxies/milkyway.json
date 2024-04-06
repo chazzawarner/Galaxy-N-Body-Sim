@@ -8,9 +8,9 @@
                 {
                     "type": "Miyamoto-Nagai",
                     "parameters": {
-                        "mass": 6.58e10,
-                        "a": 4.85,
-                        "b": 0.305
+                        "mass": 7.12e10,
+                        "a": 3.262,
+                        "b": 0.289
                     }
                 }
             ]
@@ -21,10 +21,11 @@
             "potentials": [
                 
                 {
-                    "type": "Hernquist",
+                    "type": "Miyamoto-Nagai",
                     "parameters": {
-                        "mass": 4.07e9,
-                        "a": 0.184
+                        "mass": 1.02e10,
+                        "a": 0,
+                        "b": 0.236
                     }
                 }
             ]
@@ -36,8 +37,8 @@
                 {
                     "type": "NFW",
                     "parameters": {
-                        "mass": 1.62e12,
-                        "a": 200
+                        "mass": 3.306e12,
+                        "a": 45
                     }
                 }
             ]

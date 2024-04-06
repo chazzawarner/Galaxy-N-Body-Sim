@@ -1,5 +1,5 @@
 {
-    "name": "Jason the Galaxy",
+    "name": "Example galaxy",
     "components": [
         {
             "name": "Stellar Disk",
@@ -58,7 +58,7 @@
                 {
                     "type": "NFW",
                     "parameters": {
-                        "mass": 1e12,
+                        "mass": 3e11,
                         "a": 8.5
                     }
                 }

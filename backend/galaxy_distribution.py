@@ -251,12 +251,13 @@ class Galaxy:
         v_circ_total = vcirc(self.total_potential, r * u.kpc)
         plt.plot(r, v_circ_total, label='Total')
         plt.legend()
-        plt.title(f'{self.name} Rotational Velocity')
-        plt.xlabel('r (kpc)')
-        plt.ylabel('v_circ (km/s)')
+        plt.title(fr'{self.name} rotational velocity')
+        plt.xlabel(r'r (kpc)')
+        plt.ylabel(r'$v_{\mathrm{circ}}$ (km/s)')
         if log:
             plt.xscale('log')
         plt.savefig(f'backend/galaxy_plots/{self.name}_rotational_velocity.png')
+        plt.savefig(f'backend/galaxy_plots/{self.name}_rotational_velocity.pdf', format='pdf', bbox_inches='tight')
         plt.show()
             
     # Plot density of galaxy in a hexbin plot (as function of R and z)
@@ -270,12 +271,14 @@ class Galaxy:
         
         plt.figure()
         plt.hexbin(R, positions[:, 2], gridsize=50, cmap='plasma', bins='log')
-        plt.colorbar()
-        plt.title(f'{self.name} Density')
+        cbar = plt.colorbar(label='Star density', orientation='vertical')
+        cbar.set_label('Star density', rotation=270, labelpad=20)
+        plt.title(f'{self.name} density')
         plt.xlabel('R (kpc)')
         plt.ylabel('z (kpc)')
 
         plt.savefig(f'backend/galaxy_plots/{self.name}_density_hexbin.png')
+        plt.savefig(f'backend/galaxy_plots/{self.name}_density_hexbin.pdf', format='pdf', bbox_inches='tight')
         plt.show()
     
     # Plot hexbin of the theoretical density of the galaxy
@@ -396,6 +399,59 @@ class Galaxy:
     def export_galaxy(self, filename):
         bodies = self.get_galaxy()
         np.savetxt(filename, np.column_stack((bodies['mass'], bodies['position'], bodies['velocity'])), delimiter=',', header='mass,x,y,z,vx,vy,vz', comments='')
+        
+    # Plot rotational velocity and density of galaxy on the same plot
+    def plot_rot_and_dens(self, r_max=None):
+        r_min = 1e-10
+        if r_max is None:
+            r_max = self.get_galaxy_max_radius()
+        r = np.linspace(r_min, r_max, 1000)
+        
+        fig, axs = plt.subplots(2, 1, figsize=(7, 7), gridspec_kw={'height_ratios': [2, 1]})
+        plt.subplots_adjust(left=0.1, right=0.9)
+        
+        # Plot rotational velocity
+        for component in self.components:
+            total_component_potential = component['potentials'][0]['galpy_potential']
+            for potential in component['potentials'][1:]:
+                total_component_potential.__add__(potential['galpy_potential'])
+            v_circ_component = total_component_potential.vcirc(r * u.kpc)
+            
+            axs[0].plot(r, v_circ_component, label=component['name'], linestyle='--')
+            
+                
+        v_circ_total = vcirc(self.total_potential, r * u.kpc)
+        axs[0].plot(r, v_circ_total, label='Total')
+        axs[0].legend()
+        axs[0].set_xlabel(r'r (kpc)')
+        axs[0].set_ylabel(r'$v_{\mathrm{circ}}$ (km/s)')
+        
+        # Plot density
+        positions = np.empty((0, 3))
+        for component in self.components:
+            if 'bodies' in component:
+                positions = np.vstack((positions, component['bodies']['positions']))
+
+        R = np.sqrt(positions[:, 0]**2 + positions[:, 1]**2)
+        # Get the bounding box of the subplot
+        bbox = axs[1].get_position()
+
+        # Determine the aspect ratio of the subplot
+        subplot_aspect_ratio = bbox.height / bbox.width
+
+        # Adjust the gridsize
+        gridsize = (50, int(50 * subplot_aspect_ratio))
+
+        hb = axs[1].hexbin(R, positions[:, 2], gridsize=gridsize, cmap='plasma', bins='log')
+        cbar = plt.colorbar(hb, ax=axs[1], label='Star density', orientation='vertical')
+        cbar.set_label('No. stars', rotation=270, labelpad=20)
+
+        axs[1].set_xlabel('R (kpc)')
+        axs[1].set_ylabel('z (kpc)')
+
+        plt.tight_layout()
+        plt.savefig(f'backend/galaxy_plots/{self.name}_rot_and_dens.pdf', format='pdf', bbox_inches='tight')
+        plt.show()
                     
     
     
@@ -403,13 +459,14 @@ class Galaxy:
     
 
 def main():
-    galaxy = Galaxy('backend/galaxies/andromeda.json', num_bodies=100)
+    galaxy = Galaxy('backend/galaxies/andromeda.json', num_bodies=10000)
     print(galaxy.total_mass)
-    galaxy.plot_scatter_density()
-    galaxy.plot_theoretical_mass()
+    #galaxy.plot_scatter_density()
+    #galaxy.plot_theoretical_mass()
     #galaxy.plot_component_scatter()
-    galaxy.plot_rotational_vel(r_max=100)
-    galaxy.plot_full_galaxy()
+    #galaxy.plot_rotational_vel(r_max=50)
+    galaxy.plot_rot_and_dens(r_max=50)
+    #galaxy.plot_full_galaxy()
     
 if __name__ == "__main__":
     main()

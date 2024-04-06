@@ -31,7 +31,7 @@ def metropolis_hastings(target_density, dimensions, n_samples, burn_in=1000):
 
 
 def main():
-    P = lambda x: 3 * np.exp(-x*x/2) + np.exp(-(x - 4)**2/2)
+    """P = lambda x: 3 * np.exp(-x*x/2) + np.exp(-(x - 4)**2/2)
     P_norm = lambda x: P(x) / (3 * np.sqrt(2 * np.pi) + np.sqrt(2 * np.pi))
     samples_1k = metropolis_hastings(P, 1, 1000)
     samples_10k = metropolis_hastings(P, 1, 10000)
@@ -50,7 +50,7 @@ def main():
     plt.xlabel('x')
     plt.ylabel('Density')
     #plt.savefig('backend/mcmc_plots/p_x.png')
-    plt.show()
+    plt.show()"""
 
     """# Plot density for Miyamoto-Nagai potential
     R = np.linspace(0.1, 10, 1000)
@@ -89,6 +89,24 @@ def main():
     plt.ylim(-1, 1)
     plt.savefig('backend/mcmc_plots/miyamoto_nagai_samples_hexbin.png')
     plt.show()"""
+    
+    # Plot samples for Miyamoto-Nagai potential density but reduced to a sphere
+    n_samples = 100000
+    a = 0
+    b = 10
+    potential = MiyamotoNagaiPotential(a=a, b=b, normalize=1)
+    density = lambda R, z: potential.dens(R, z, 0)
+    samples = metropolis_hastings(density, 2, n_samples)
+    plt.figure(4)
+    plt.hexbin(samples[:, 0], samples[:, 1], gridsize=100, cmap='plasma', bins='log')
+    plt.colorbar()
+    plt.title('Miyamoto-Nagai Potential Samples (Reduced to Sphere)')
+    plt.xlabel('R')
+    plt.ylabel('z')
+    
+    plt.axis('equal')
+    
+    plt.show()
 
 
 if __name__ == "__main__":
