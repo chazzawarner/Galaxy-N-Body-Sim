@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Define the star types and their mass ranges (Harvard spectral classification)
 star_types = {
     "O": {
         "proportion": 0.00003,
@@ -36,6 +37,7 @@ total_proportion = sum(data["proportion"] for data in star_types.values())
 #print(f"Total proportion: {total_proportion}")
 proportion_scale = 100 / total_proportion
 
+# Return a random star mass from the star types dictionary
 def get_random_star():
     rand = np.random.rand() * 100
     #print(f"Random number: {rand}")
@@ -49,11 +51,7 @@ def get_random_star():
         
         cum_prop += data["proportion"]
         
+# Get the average star mass of the star types dictionary
 def get_average_star_mass():
     return sum(data["proportion"] * np.mean(data["mass-range"]) for data in star_types.values()) / 100
         
-
-"""random_stars = [get_random_star() for _ in range(1000)]
-plt.hist(random_stars, bins=100)
-#plt.xscale("log")
-plt.show()"""

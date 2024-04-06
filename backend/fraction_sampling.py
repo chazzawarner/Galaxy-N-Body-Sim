@@ -32,6 +32,7 @@ def fraction_sampling(num_bodies, a=1, rejection_threshold=None):
     return radius
 
 def main():
+    # Test the fraction sampling function
     num_bodies = 100000
     a = 0.45/10
     positions = fraction_sampling(num_bodies, a=a, rejection_threshold=10)

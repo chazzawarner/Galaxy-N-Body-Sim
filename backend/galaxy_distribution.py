@@ -8,7 +8,7 @@ from fraction_sampling import fraction_sampling
 from tqdm import tqdm
 from star_types import get_random_star
 
-# Galaxy generation function
+# Galaxy generation class
 class Galaxy:
     def __init__(self, json_file, num_bodies=1000000, g_const=1, export=True, pos_units=u.kpc, vel_units=u.km/u.s, mass_units=u.M_sun, density_units=u.M_sun/u.kpc**3, potential_units=u.km**2/u.s**2, time_units=u.Gyr, angle_units=u.rad):
         # Load JSON file
@@ -102,8 +102,6 @@ class Galaxy:
                 potentials.append(potential['galpy_potential'])
         
         total_potential = potentials
-        """for potential in potentials[1:]:
-            total_potential.__add__(potential)"""
         
         #print(f"Total potential: {total_potential}")
         
@@ -162,11 +160,6 @@ class Galaxy:
                 #samples = metropolis_hastings(density, 1, num_bodies)
                 print(f"Num. bodies in potential {potential['type']}: {pot_bodies}")
                 samples = fraction_sampling(pot_bodies, a=potential['parameters']['a'])
-                
-                """# Scale samples to the radius of "a" - a precautionary measure
-                scale = potential['parameters']['a'] / np.percentile(samples, 99)
-                print(f"Scale: {scale}")
-                samples = samples * scale"""
                 
                 # Reject samples outside the maximum radius of the galaxy
                 samples = samples[samples < self.get_galaxy_max_radius()]
@@ -229,6 +222,7 @@ class Galaxy:
     
     # Plot the rotational velocities of the galaxy
     def plot_rotational_vel(self, r_max=None, log=False):
+        # Set the minimum radius to avoid divide by zero errors
         r_min = 1e-10
         if r_max is None:
             r_max = self.get_galaxy_max_radius()
@@ -238,6 +232,7 @@ class Galaxy:
         
         plt.figure()
         
+        # Plot the rotational velocities of each component
         for component in self.components:
             total_component_potential = component['potentials'][0]['galpy_potential']
             for potential in component['potentials'][1:]:

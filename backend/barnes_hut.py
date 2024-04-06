@@ -129,10 +129,6 @@ def compute_force(node, body, theta, smoothing_length, g_const):
 
 # Use the Barnes-Hut algorithm to calculate the forces on each body
 def compute_all_forces(bodies, theta=0.5, g_const=4.3009e-3):
-    
-    
-    
-    
     time_start = time.time()
     octree = create_octree(bodies)
     time_end = time.time()
@@ -143,15 +139,6 @@ def compute_all_forces(bodies, theta=0.5, g_const=4.3009e-3):
     smoothing_length = 1.5 * (len(bodies["mass"]) ** (-0.44)) # Optimal smoothing length for Barnes-Hut algorithm using Hernquist
     
     time.start = time.time()
-    
-    """for i in range(len(bodies["mass"])):
-        body = {
-            "mass": bodies["mass"][i],
-            "position": bodies["position"][i]
-        }
-        
-        forces[i] = compute_force(quadtree, body, theta)
-        #print(f"Forces on body {i}: {forces[i]}")"""
         
     print("Computing forces...")
     
@@ -169,58 +156,7 @@ def compute_all_forces(bodies, theta=0.5, g_const=4.3009e-3):
     return forces
 
 def main():
-    num_bodies = 100
-    timesteps = 10
-    timestep = 1
-    bbox = [0, 100] # Bounding box, min/max x and y coordinates
-    
-    bodies = {
-        "mass": [np.random.uniform(0.1, 10) for _ in range(num_bodies)],
-        "position": np.random.uniform(0, 100, size=(num_bodies, 2)),
-        "velocity": np.zeros((num_bodies, 2))
-    }
-    
-    #quadtree = create_quadtree(bodies, np.array([bbox[0]/2, bbox[0]/2]), bbox[1] - bbox[0])
-    
-    # Plot the quadtree, drawing squares for each node
-    def plot_qt(quadtree):
-        if quadtree.children is not None:
-            for child in quadtree.children:
-                plot_qt(quadtree.children[child])
-        
-        plt.plot([quadtree.centre[0] - quadtree.size/2, quadtree.centre[0] + quadtree.size/2], [quadtree.centre[1] - quadtree.size/2, quadtree.centre[1] - quadtree.size/2], 'k-', linewidth=0.5)
-        plt.plot([quadtree.centre[0] - quadtree.size/2, quadtree.centre[0] + quadtree.size/2], [quadtree.centre[1] + quadtree.size/2, quadtree.centre[1] + quadtree.size/2], 'k-', linewidth=0.5)
-        plt.plot([quadtree.centre[0] - quadtree.size/2, quadtree.centre[0] - quadtree.size/2], [quadtree.centre[1] - quadtree.size/2, quadtree.centre[1] + quadtree.size/2], 'k-', linewidth=0.5)
-        plt.plot([quadtree.centre[0] + quadtree.size/2, quadtree.centre[0] + quadtree.size/2], [quadtree.centre[1] - quadtree.size/2, quadtree.centre[1] + quadtree.size/2], 'k-', linewidth=0.5)
-        
-    #plot_qt(quadtree)
-    
-    
-
-    
-    forces = compute_all_forces(bodies)
-    
-    print(forces)
-    
-    updated_bodies = {
-        "mass": np.copy(bodies["mass"]),
-        "position": np.copy(bodies["position"]),
-        "velocity": np.copy(bodies["velocity"])
-    }
-    
-    updated_bodies["velocity"] += forces * timestep / updated_bodies["mass"].reshape(-1, 1)
-    updated_bodies["position"] += updated_bodies["velocity"] * timestep
-    
-    print(bodies["position"] == updated_bodies["position"])
-    
-    plt.scatter(bodies["position"][:, 0], bodies["position"][:, 1], s=2)
-    plt.scatter(updated_bodies["position"][:, 0], updated_bodies["position"][:, 1])
-    plt.xlim(bbox)
-    plt.ylim(bbox)
-    plt.axis('equal')
-    
-    plt.show()
-    
+    pass
 
 if __name__ == '__main__':
     main()
